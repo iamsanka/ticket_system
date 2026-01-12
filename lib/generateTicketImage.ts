@@ -1,4 +1,5 @@
 import { createCanvas, loadImage } from "canvas";
+import path from "path";
 
 type TicketImageParams = {
   qrPng: string;
@@ -24,18 +25,18 @@ export async function generateBrandedTicket({
   const ctx = canvas.getContext("2d");
 
   // Background
-  ctx.fillStyle = "#0A1A2F"; // Taprobane dark blue
+  ctx.fillStyle = "#0A1A2F";
   ctx.fillRect(0, 0, width, height);
 
-  // Load logo
-  const logo = await loadImage("public/logo.png");
+  // Load logo using absolute path (Vercel-safe)
+  const logoPath = path.join(process.cwd(), "public", "logo.png");
+  const logo = await loadImage(logoPath);
 
-  // Draw logo (centered at top)
+  // Draw logo
   const logoWidth = 180;
   const logoHeight = 180;
   const logoX = (width - logoWidth) / 2;
   const logoY = 20;
-
   ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
 
   // Title
