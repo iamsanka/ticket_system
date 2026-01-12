@@ -30,6 +30,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "app/api/send-ticket/route.js"  ],
+, "app/api/send-ticket/route.js", "prisma.config.ts.bak"  ],
   "exclude": ["node_modules"]
 }
