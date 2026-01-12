@@ -16,7 +16,10 @@ model Event {
   priceChild  Int
   createdAt   DateTime @default(now())
   orders      Order[]
+
+  @@index([date])
 }
+
 
 model Order {
   id            String   @id @default(cuid())
@@ -34,4 +37,21 @@ model Order {
   name          String?
   usedAt        DateTime?
   event         Event    @relation(fields: [eventId], references: [id])
+
+  @@index([eventId])
+  @@index([contactNo])
+  @@index([email])
+  @@index([usedAt])
+  @@index([createdAt])
+  @@index([eventId, contactNo]) // for fast phone search inside event
 }
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // hashed password
+  name      String?
+  role      String   @default("admin") // optional: admin, staff, etc.
+  createdAt DateTime @default(now())
+}
+

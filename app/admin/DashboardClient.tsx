@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 type Event = {
@@ -13,48 +13,33 @@ type Order = {
   id: string;
   name: string;
   email: string;
-  contactNo: string;
   adultQuantity: number;
   childQuantity: number;
   usedAt: string | null;
 };
 
-export default function CheckInPanel() {
+export default function DashboardClient({ events }: { events: Event[] }) {
   const router = useRouter();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<string>("");
+  const [selectedEvent, setSelectedEvent] = useState<string>(
+    events[0]?.id ?? ""
+  );
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    async function loadEvents() {
-      const res = await fetch("/api/admin/events");
-      const data = await res.json();
-      setEvents(data.events);
-      setSelectedEvent(data.events[0]?.id ?? "");
-    }
-    loadEvents();
-  }, []);
 
   useEffect(() => {
     async function loadOrders() {
       if (!selectedEvent) return;
       setLoading(true);
-
-      const res = await fetch(
-        `/api/admin/orders?eventId=${selectedEvent}&search=${search}`
-      );
-
+      const res = await fetch(`/api/admin/orders?eventId=${selectedEvent}`);
       const data = await res.json();
       setOrders(data.orders || []);
       setLoading(false);
     }
 
     loadOrders();
-  }, [selectedEvent, search]);
+  }, [selectedEvent]);
 
-  const filteredOrders = orders; // server-side filtering now
+  const checkInCount = orders.filter((o) => o.usedAt !== null).length;
 
   async function resendTicket(orderId: string) {
     await fetch(`/api/send-ticket?orderId=${orderId}`);
@@ -72,59 +57,49 @@ export default function CheckInPanel() {
 
   return (
     <main className="p-6 text-white bg-black min-h-screen">
-      {/* Back Button */}
-      <button
-        onClick={() => router.push("/admin")}
-        className="bg-gray-800 text-white px-4 py-2 rounded-lg mb-6"
-      >
-        ← Back to Dashboard
-      </button>
-
-      <h1 className="text-3xl font-bold mb-6">Check-In Panel</h1>
+      <h1 className="text-3xl font-bold mb-6">Staff Dashboard</h1>
 
       {/* Event Selector */}
       <div className="mb-6">
         <label className="block mb-2">Select Event</label>
         <select
-          className="bg-gray-900 text-white p-2 rounded border border-gray-600"
+          className="text-black p-2 rounded"
           value={selectedEvent}
           onChange={(e) => setSelectedEvent(e.target.value)}
         >
           {events.map((ev) => (
-            <option
-              key={ev.id}
-              value={ev.id}
-              style={{ color: "white", backgroundColor: "#111" }}
-            >
+            <option key={ev.id} value={ev.id}>
               {ev.title} — {new Date(ev.date).toDateString()}
             </option>
           ))}
         </select>
       </div>
 
-      {/* Search Field */}
-      <div className="mb-6 w-full max-w-md">
-        <label className="block mb-2 text-lg font-medium">
-          Search by Phone Number
-        </label>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Enter phone number..."
-          className="w-full p-3 rounded-lg text-black border border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
-        />
-      </div>
-
       {/* Live Stats */}
       <div className="mb-6">
         <p className="text-xl">
-          <strong>Total Attendees:</strong> {filteredOrders.length}
+          <strong>Total Attendees:</strong> {orders.length}
         </p>
         <p className="text-xl text-green-400">
-          <strong>Checked In:</strong>{" "}
-          {filteredOrders.filter((o) => o.usedAt !== null).length}
+          <strong>Checked In:</strong> {checkInCount}
         </p>
+      </div>
+
+      {/* Navigation Buttons */}
+      <div className="flex gap-4 mb-10">
+        <button
+          onClick={() => router.push("/admin")}
+          className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded"
+        >
+          Check-In Panel
+        </button>
+
+        <button
+          onClick={() => router.push("/admin/checkin")}
+          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
+        >
+          Open QR Scanner
+        </button>
       </div>
 
       {/* Attendee List */}
@@ -134,7 +109,7 @@ export default function CheckInPanel() {
         <p>Loading attendees…</p>
       ) : (
         <div className="space-y-4">
-          {filteredOrders.map((order) => (
+          {orders.map((order) => (
             <div
               key={order.id}
               className="border border-gray-700 p-4 rounded flex justify-between"
@@ -144,8 +119,7 @@ export default function CheckInPanel() {
                   <strong>{order.name}</strong>
                 </p>
                 <p>{order.email}</p>
-                <p>Phone: {order.contactNo}</p>
-                <p>People: {order.adultQuantity}</p>
+                <p>People: {order.adultQuantity + order.childQuantity}</p>
                 <p>
                   Status:{" "}
                   {order.usedAt ? (
