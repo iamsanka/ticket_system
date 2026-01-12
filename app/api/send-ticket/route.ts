@@ -1,3 +1,5 @@
+"use server";
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateTicketQR } from "@/lib/generateQr";
@@ -26,12 +28,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ message: "Ticket already sent" });
     }
 
-    // Generate QR code
+    // Generate QR code (JSON only)
     const qr = await generateTicketQR({
-      name: order.name ?? "",
-      event: order.event.title,
-      people: (order.adultQuantity ?? 0) + (order.childQuantity ?? 0),
-      contact: order.contactNo ?? "",
       orderId: order.id,
     });
 
