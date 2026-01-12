@@ -1,15 +1,44 @@
 "use client";
 
-import { prisma } from "@/lib/prisma";
-import { generateTicketQR } from "@/lib/generateQr";
-import { sendTicketEmail } from "@/lib/sendTicketEmail";
+import { useEffect, useState } from "react";
 
-export default async function SuccessPage({
+export default function SuccessPage({
   searchParams,
 }: {
   searchParams: { orderId?: string };
 }) {
   const orderId = searchParams.orderId;
+  const [status, setStatus] = useState<"loading" | "done" | "error">("loading");
+  const [order, setOrder] = useState<any>(null);
+
+  useEffect(() => {
+    if (!orderId) return;
+
+    async function processTicket() {
+      try {
+        // 1. Fetch order details from API
+        const orderRes = await fetch(`/api/order?orderId=${orderId}`);
+        const orderJson = await orderRes.json();
+
+        if (!orderRes.ok) {
+          setStatus("error");
+          return;
+        }
+
+        setOrder(orderJson.order);
+
+        // 2. Trigger ticket email sending
+        await fetch(`/api/send-ticket?orderId=${orderId}`);
+
+        setStatus("done");
+      } catch (err) {
+        console.error(err);
+        setStatus("error");
+      }
+    }
+
+    processTicket();
+  }, [orderId]);
 
   if (!orderId) {
     return (
@@ -20,42 +49,22 @@ export default async function SuccessPage({
     );
   }
 
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: { event: true },
-  });
-
-  if (!order) {
+  if (status === "loading" || !order) {
     return (
       <main className="p-10 max-w-2xl mx-auto text-black">
-        <h1 className="text-2xl font-bold">Order Not Found</h1>
-        <p>We couldn't find your order. Please contact support.</p>
+        <h1 className="text-2xl font-bold">Processing your ticket…</h1>
+        <p>Please wait a moment.</p>
       </main>
     );
   }
 
-  // Generate QR + send email (only if not already sent)
-  if (!order.ticketUrl) {
-    const qr = await generateTicketQR({
-      name: order.name ?? "",
-      event: order.event.title,
-      people: (order.adultQuantity ?? 0) + (order.childQuantity ?? 0),
-      contact: order.contactNo ?? "",
-      orderId: order.id,
-    });
-
-    await sendTicketEmail({
-      to: order.email,
-      name: order.name ?? "",
-      qrPng: qr,
-      eventTitle: order.event.title,
-    });
-
-    // Optional: save QR URL or mark as sent
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { ticketUrl: "sent" },
-    });
+  if (status === "error") {
+    return (
+      <main className="p-10 max-w-2xl mx-auto text-black">
+        <h1 className="text-2xl font-bold">Something went wrong</h1>
+        <p>Please contact support.</p>
+      </main>
+    );
   }
 
   return (
@@ -72,7 +81,7 @@ export default async function SuccessPage({
           <strong>Event:</strong> {order.event.title}
         </p>
         <p>
-          <strong>Date:</strong> {order.event.date.toDateString()}
+          <strong>Date:</strong> {order.event.date}
         </p>
         <p>
           <strong>Venue:</strong> {order.event.venue}
