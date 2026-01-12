@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+/* Global light theme */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+/* Force white background everywhere */
+html,
+body {
+  background: #ffffff !important;
+  color: #171717 !important;
+  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Remove dark mode overrides completely */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #ffffff;
+    --foreground: #171717;
+  }
+}
