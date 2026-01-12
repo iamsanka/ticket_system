@@ -112,7 +112,7 @@ export default function CheckInPanel() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Enter phone number..."
-          className="w-full p-3 rounded-lg text-black border border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full p-3 rounded-lg bg-gray-800 text-white placeholder-gray-400 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500"
         />
       </div>
 
