@@ -1,5 +1,13 @@
-import { createCanvas, loadImage } from "canvas";
+// FILE: lib/generateTicketImage.ts
+
+import { createCanvas, loadImage, registerFont } from "canvas";
 import path from "path";
+
+// Register a real font (must exist in /public/fonts)
+registerFont(
+  path.join(process.cwd(), "public", "fonts", "Geist-Regular.ttf"),
+  { family: "Geist" }
+);
 
 type TicketImageParams = {
   qrPng: string;
@@ -39,17 +47,17 @@ export async function generateBrandedTicket({
 
   // Title
   ctx.fillStyle = "#FFFFFF";
-  ctx.font = "bold 36px Sans-serif";
-  ctx.fillText(event, 40, 260);
+  ctx.font = "bold 36px Geist, Arial, sans-serif";
+  ctx.fillText(event || "EVENT", 40, 260);
 
   // Details
-  ctx.font = "28px Sans-serif";
-  ctx.fillText(`Name: ${name}`, 40, 320);
-  ctx.fillText(`Date: ${date}`, 40, 360);
-  ctx.fillText(`Venue: ${venue}`, 40, 400);
-  ctx.fillText(`Category: ${category}`, 40, 440);
-  ctx.fillText(`Tier: ${tier}`, 40, 480);
-  ctx.fillText(`Ticket Code: ${ticketCode}`, 40, 520);
+  ctx.font = "28px Geist, Arial, sans-serif";
+  ctx.fillText(`Name: ${name || "Guest"}`, 40, 320);
+  ctx.fillText(`Date: ${date || "N/A"}`, 40, 360);
+  ctx.fillText(`Venue: ${venue || "N/A"}`, 40, 400);
+  ctx.fillText(`Category: ${category || "N/A"}`, 40, 440);
+  ctx.fillText(`Tier: ${tier || "N/A"}`, 40, 480);
+  ctx.fillText(`Ticket Code: ${ticketCode || "N/A"}`, 40, 520);
 
   // QR Code
   const qrImage = await loadImage(`data:image/png;base64,${qrPng}`);

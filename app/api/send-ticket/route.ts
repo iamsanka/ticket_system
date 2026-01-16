@@ -75,10 +75,6 @@ export async function GET(req: Request) {
     data: { ticketSent: true },
   });
 
-  // ─────────────────────────────────────────────
-  // Generate ticket images and send email
-  // ─────────────────────────────────────────────
-
   const ticketImages = [];
 
   for (const ticket of ticketsToCreate) {
