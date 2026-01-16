@@ -6,14 +6,11 @@ export async function POST(req: Request) {
     const { qrCode } = await req.json();
 
     if (!qrCode) {
-      return NextResponse.json(
-        { valid: false, reason: "Missing QR code" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing QR code" }, { status: 400 });
     }
 
-    // Find ticket by QR code
-    const ticket = await prisma.ticket.findUnique({
+    // Find ticket by QR code (NOT unique → use findFirst)
+    const ticket = await prisma.ticket.findFirst({
       where: { qrCode },
       include: {
         order: {
@@ -25,39 +22,16 @@ export async function POST(req: Request) {
     });
 
     if (!ticket) {
-      return NextResponse.json({
-        valid: false,
-        reason: "Invalid ticket",
-      });
+      return NextResponse.json({ valid: false, message: "Invalid ticket" });
     }
-
-    // Check if already used
-    if (ticket.usedAt) {
-      return NextResponse.json({
-        valid: false,
-        reason: "Ticket already used",
-      });
-    }
-
-    // Mark ticket as used
-    await prisma.ticket.update({
-      where: { id: ticket.id },
-      data: { usedAt: new Date() },
-    });
 
     return NextResponse.json({
       valid: true,
-      category: ticket.category,
-      tier: ticket.tier,
-      name: ticket.order.name,
-      email: ticket.order.email,
-      event: ticket.order.event.title,
-      eventDate: ticket.order.event.date,
+      ticket,
     });
-  } catch (error) {
-    console.error("Validate-ticket error:", error);
+  } catch (err) {
     return NextResponse.json(
-      { valid: false, reason: "Server error" },
+      { error: "Server error", details: String(err) },
       { status: 500 }
     );
   }
