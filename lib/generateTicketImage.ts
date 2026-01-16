@@ -5,18 +5,22 @@ type TicketImageParams = {
   qrPng: string;
   event: string;
   name: string;
-  people: number;
   date: string;
   venue: string;
+  category: "ADULT" | "CHILD";
+  tier: "LOUNGE" | "STANDARD";
+  ticketCode: string;
 };
 
 export async function generateBrandedTicket({
   qrPng,
   event,
   name,
-  people,
   date,
   venue,
+  category,
+  tier,
+  ticketCode,
 }: TicketImageParams): Promise<string> {
   const width = 1000;
   const height = 600;
@@ -28,31 +32,27 @@ export async function generateBrandedTicket({
   ctx.fillStyle = "#0A1A2F";
   ctx.fillRect(0, 0, width, height);
 
-  // Load logo using absolute path (Vercel-safe)
+  // Load logo
   const logoPath = path.join(process.cwd(), "public", "logo.png");
   const logo = await loadImage(logoPath);
-
-  // Draw logo
-  const logoWidth = 180;
-  const logoHeight = 180;
-  const logoX = (width - logoWidth) / 2;
-  const logoY = 20;
-  ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
+  ctx.drawImage(logo, (width - 180) / 2, 20, 180, 180);
 
   // Title
   ctx.fillStyle = "#FFFFFF";
-  ctx.font = "bold 48px Sans-serif";
+  ctx.font = "bold 36px Sans-serif";
   ctx.fillText(event, 40, 260);
 
   // Details
   ctx.font = "28px Sans-serif";
-  ctx.fillText(`Name: ${name}`, 40, 330);
-  ctx.fillText(`People: ${people}`, 40, 380);
-  ctx.fillText(`Date: ${date}`, 40, 430);
-  ctx.fillText(`Venue: ${venue}`, 40, 480);
+  ctx.fillText(`Name: ${name}`, 40, 320);
+  ctx.fillText(`Date: ${date}`, 40, 360);
+  ctx.fillText(`Venue: ${venue}`, 40, 400);
+  ctx.fillText(`Category: ${category}`, 40, 440);
+  ctx.fillText(`Tier: ${tier}`, 40, 480);
+  ctx.fillText(`Ticket Code: ${ticketCode}`, 40, 520);
 
-  // Load QR code
-  const qrImage = await loadImage(qrPng);
+  // QR Code
+  const qrImage = await loadImage(`data:image/png;base64,${qrPng}`);
   ctx.drawImage(qrImage, width - 350, 200, 300, 300);
 
   return canvas.toDataURL("image/png");

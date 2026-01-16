@@ -7,51 +7,126 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+//
+// ─────────────────────────────────────────────
+//   EVENT MODEL
+// ─────────────────────────────────────────────
+//
+
 model Event {
-  id          String   @id @default(cuid())
-  title       String
-  date        DateTime
-  venue       String
-  priceAdult  Int
-  priceChild  Int
-  createdAt   DateTime @default(now())
-  orders      Order[]
+  id        String   @id @default(cuid())
+  title     String
+  date      DateTime
+  venue     String
+
+  // Prices for each category + tier
+  adultLoungePrice    Int
+  adultStandardPrice  Int
+  childLoungePrice    Int
+  childStandardPrice  Int
+
+  createdAt DateTime @default(now())
+  orders    Order[]
 
   @@index([date])
 }
 
+//
+// ─────────────────────────────────────────────
+//   ORDER MODEL
+// ─────────────────────────────────────────────
+//
 
 model Order {
-  id            String   @id @default(cuid())
-  eventId       String
-  quantity      Int
-  totalAmount   Int
-  stripeIntent  String
-  status        String   @default("pending")
-  createdAt     DateTime @default(now())
-  ticketUrl     String?
-  email         String
-  adultQuantity Int?
-  childQuantity Int?
-  contactNo     String?
-  name          String?
-  usedAt        DateTime?
-  event         Event    @relation(fields: [eventId], references: [id])
+  id        String   @id @default(cuid())
+  eventId   String
+
+  // Quantities for each ticket type
+  adultLounge   Int @default(0)
+  adultStandard Int @default(0)
+  childLounge   Int @default(0)
+  childStandard Int @default(0)
+
+  totalAmount  Int
+
+  // REMOVED: stripeIntent (no longer needed)
+  // stripeIntent String?
+
+  // NEW: Stripe Checkout webhook confirmation
+  paid        Boolean  @default(false)
+
+  // Optional: still useful for admin dashboards
+  status      String   @default("pending")
+
+  createdAt   DateTime @default(now())
+
+  email       String
+  contactNo   String?
+  name        String?
+
+  // Prevent duplicate email sends
+  ticketSent  Boolean @default(false)
+
+  event       Event    @relation(fields: [eventId], references: [id])
+  tickets     Ticket[]
 
   @@index([eventId])
-  @@index([contactNo])
   @@index([email])
-  @@index([usedAt])
+  @@index([contactNo])
   @@index([createdAt])
-  @@index([eventId, contactNo]) // for fast phone search inside event
+  @@index([eventId, contactNo])
 }
+
+//
+// ─────────────────────────────────────────────
+//   TICKET MODEL
+// ─────────────────────────────────────────────
+//
+
+model Ticket {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+
+  category  TicketCategory
+  tier      TicketTier
+
+  // Human-readable ticket code
+  ticketCode String?
+
+  // QR code payload
+  qrCode    String
+
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([category])
+  @@index([tier])
+  @@index([usedAt])
+}
+
+enum TicketCategory {
+  ADULT
+  CHILD
+}
+
+enum TicketTier {
+  LOUNGE
+  STANDARD
+}
+
+//
+// ─────────────────────────────────────────────
+//   USER MODEL
+// ─────────────────────────────────────────────
+//
 
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  password  String   // hashed password
+  password  String
   name      String?
-  role      String   @default("admin") // optional: admin, staff, etc.
+  role      String   @default("admin")
   createdAt DateTime @default(now())
 }
-

@@ -11,21 +11,33 @@ export default function BookingForm({ eventId }: { eventId: string }) {
 
     const form = new FormData(e.target as HTMLFormElement);
 
+    const payload = {
+      eventId,
+      name: form.get("name"),
+      email: form.get("email"),
+      contactNo: form.get("contact"),
+      adultLounge: Number(form.get("adultLounge")),
+      adultStandard: Number(form.get("adultStandard")),
+      childLounge: Number(form.get("childLounge")),
+      childStandard: Number(form.get("childStandard")),
+    };
+
     const res = await fetch("/api/checkout", {
       method: "POST",
-      body: JSON.stringify({
-        eventId,
-        name: form.get("name"),
-        email: form.get("email"),
-        contact: form.get("contact"),
-        adults: Number(form.get("adults")),
-        children: Number(form.get("children")),
-      }),
       headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json();
-    window.location.href = data.url; // redirect to Stripe
+
+    if (!data.sessionUrl) {
+      alert("Checkout failed");
+      setLoading(false);
+      return;
+    }
+
+    // ⭐ Redirect user to Stripe Checkout
+    window.location.href = data.sessionUrl;
   }
 
   return (
@@ -54,26 +66,50 @@ export default function BookingForm({ eventId }: { eventId: string }) {
         />
       </div>
 
-      <div>
-        <label>Adult Tickets</label>
-        <input
-          name="adults"
-          type="number"
-          min={1}
-          defaultValue={1}
-          className="border p-2 w-full text-black"
-        />
-      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label>Adult Lounge</label>
+          <input
+            name="adultLounge"
+            type="number"
+            min={0}
+            defaultValue={0}
+            className="border p-2 w-full text-black"
+          />
+        </div>
 
-      <div>
-        <label>Child Tickets</label>
-        <input
-          name="children"
-          type="number"
-          min={0}
-          defaultValue={0}
-          className="border p-2 w-full text-black"
-        />
+        <div>
+          <label>Adult Standard</label>
+          <input
+            name="adultStandard"
+            type="number"
+            min={0}
+            defaultValue={0}
+            className="border p-2 w-full text-black"
+          />
+        </div>
+
+        <div>
+          <label>Child Lounge</label>
+          <input
+            name="childLounge"
+            type="number"
+            min={0}
+            defaultValue={0}
+            className="border p-2 w-full text-black"
+          />
+        </div>
+
+        <div>
+          <label>Child Standard</label>
+          <input
+            name="childStandard"
+            type="number"
+            min={0}
+            defaultValue={0}
+            className="border p-2 w-full text-black"
+          />
+        </div>
       </div>
 
       <button
