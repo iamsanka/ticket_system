@@ -6,7 +6,7 @@ export default async function EventPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id } = await params; // ✅ REQUIRED in Next.js 16 with Turbopack
 
   const event = await prisma.event.findUnique({
     where: { id },
@@ -21,9 +21,19 @@ export default async function EventPage({
         {new Date(event.date).toLocaleDateString()} — {event.venue}
       </p>
 
-      <div className="mt-4">
-        <p>Adult: €{event.priceAdult / 100}</p>
-        <p>Child: €{event.priceChild / 100}</p>
+      <div className="mt-4 space-y-1">
+        <p>
+          <strong>Adult Lounge:</strong> €{event.adultLoungePrice / 100}
+        </p>
+        <p>
+          <strong>Adult Standard:</strong> €{event.adultStandardPrice / 100}
+        </p>
+        <p>
+          <strong>Child Lounge:</strong> €{event.childLoungePrice / 100}
+        </p>
+        <p>
+          <strong>Child Standard:</strong> €{event.childStandardPrice / 100}
+        </p>
       </div>
 
       <div className="mt-10">

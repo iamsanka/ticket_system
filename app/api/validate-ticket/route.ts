@@ -3,58 +3,62 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
-    const { orderId } = await req.json();
+    const { qrCode } = await req.json();
 
-    if (!orderId) {
-      return NextResponse.json({
-        status: "error",
-        message: "Missing orderId",
-      });
+    if (!qrCode) {
+      return NextResponse.json(
+        { valid: false, reason: "Missing QR code" },
+        { status: 400 }
+      );
     }
-    console.log("API RECEIVED ORDER ID:", orderId);
 
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: { event: true },
+    // Find ticket by QR code
+    const ticket = await prisma.ticket.findUnique({
+      where: { qrCode },
+      include: {
+        order: {
+          include: {
+            event: true,
+          },
+        },
+      },
     });
 
-    if (!order) {
+    if (!ticket) {
       return NextResponse.json({
-        status: "invalid",
-        message: "Ticket not found",
+        valid: false,
+        reason: "Invalid ticket",
       });
     }
 
-    // Already checked in
-    if (order.usedAt) {
+    // Check if already used
+    if (ticket.usedAt) {
       return NextResponse.json({
-        status: "used",
-        message: "Ticket already checked in",
-        name: order.name,
-        event: order.event.title,
-        usedAt: order.usedAt,
+        valid: false,
+        reason: "Ticket already used",
       });
     }
-    console.log("ORDER FOUND:", !!order);
 
-    // Mark as used
-    await prisma.order.update({
-      where: { id: orderId },
+    // Mark ticket as used
+    await prisma.ticket.update({
+      where: { id: ticket.id },
       data: { usedAt: new Date() },
     });
 
     return NextResponse.json({
-      status: "success",
-      message: "Ticket valid",
-      name: order.name,
-      event: order.event.title,
+      valid: true,
+      category: ticket.category,
+      tier: ticket.tier,
+      name: ticket.order.name,
+      email: ticket.order.email,
+      event: ticket.order.event.title,
+      eventDate: ticket.order.event.date,
     });
-  } catch (err) {
-    console.error("CHECK-IN ERROR:", err);
-    return NextResponse.json({
-      status: "error",
-      message: "Server error",
-    });
-
+  } catch (error) {
+    console.error("Validate-ticket error:", error);
+    return NextResponse.json(
+      { valid: false, reason: "Server error" },
+      { status: 500 }
+    );
   }
 }
