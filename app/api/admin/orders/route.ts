@@ -28,9 +28,10 @@ export async function GET(req: Request) {
       name: true,
       email: true,
       contactNo: true,
-      adultQuantity: true,
-      childQuantity: true,
-      usedAt: true,
+      adultLounge: true,
+      adultStandard: true,
+      childLounge: true,
+      childStandard: true,
     },
   });
 
