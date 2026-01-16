@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
+import { TicketCategory, TicketTier } from "@prisma/client";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
       childLounge * event.childLoungePrice +
       childStandard * event.childStandardPrice;
 
-    // 1. Create order in DB
+    // 1. Create order
     const order = await prisma.order.create({
       data: {
         eventId,
@@ -48,7 +49,51 @@ export async function POST(req: Request) {
       },
     });
 
-    // 2. Create Stripe Checkout Session
+    // 2. Generate ticket categories and tiers for this order only
+    const categories: TicketCategory[] = [
+      ...Array(adultLounge).fill(TicketCategory.ADULT),
+      ...Array(adultStandard).fill(TicketCategory.ADULT),
+      ...Array(childLounge).fill(TicketCategory.CHILD),
+      ...Array(childStandard).fill(TicketCategory.CHILD),
+    ];
+
+    const tiers: TicketTier[] = [
+      ...Array(adultLounge).fill(TicketTier.LOUNGE),
+      ...Array(adultStandard).fill(TicketTier.STANDARD),
+      ...Array(childLounge).fill(TicketTier.LOUNGE),
+      ...Array(childStandard).fill(TicketTier.STANDARD),
+    ];
+
+    const totalQuantity = categories.length;
+
+    // 3. Count existing tickets for this event
+    const existingCount = await prisma.ticket.count({
+      where: { order: { eventId } },
+    });
+
+    const prefix = event.title
+      .toUpperCase()
+      .replace(/[^A-Z]/g, "")
+      .slice(0, 20);
+
+    const ticketsToCreate = [];
+
+    for (let i = 0; i < totalQuantity; i++) {
+      const counter = existingCount + i + 1;
+      const ticketCode = `${prefix}-${String(counter).padStart(4, "0")}`;
+
+      ticketsToCreate.push({
+        orderId: order.id,
+        category: categories[i],
+        tier: tiers[i],
+        ticketCode,
+        qrCode: `${order.id}-${categories[i]}-${tiers[i]}-${ticketCode}`,
+      });
+    }
+
+    await prisma.ticket.createMany({ data: ticketsToCreate });
+
+    // 4. Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
