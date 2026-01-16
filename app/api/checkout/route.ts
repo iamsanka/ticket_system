@@ -28,13 +28,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
+    // ⭐ STEP 1 — Adult Lounge Limit Check (100 max)
+    if (adultLounge > 0) {
+      const existingAdultLounge = await prisma.ticket.count({
+        where: {
+          order: { eventId },
+          category: "ADULT",
+          tier: "LOUNGE",
+        },
+      });
+
+      if (existingAdultLounge + adultLounge > 100) {
+        return NextResponse.json(
+          {
+            error: "Adult Lounge tickets are sold out",
+            remaining: Math.max(0, 100 - existingAdultLounge),
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const totalAmount =
       adultLounge * event.adultLoungePrice +
       adultStandard * event.adultStandardPrice +
       childLounge * event.childLoungePrice +
       childStandard * event.childStandardPrice;
 
-    // 1. Create order
+    // 2. Create order
     const order = await prisma.order.create({
       data: {
         eventId,
@@ -49,7 +70,7 @@ export async function POST(req: Request) {
       },
     });
 
-    // 2. Generate ticket categories and tiers for this order only
+    // 3. Generate ticket categories and tiers for this order only
     const categories: TicketCategory[] = [
       ...Array(adultLounge).fill(TicketCategory.ADULT),
       ...Array(adultStandard).fill(TicketCategory.ADULT),
@@ -66,7 +87,7 @@ export async function POST(req: Request) {
 
     const totalQuantity = categories.length;
 
-    // 3. Count existing tickets for this event
+    // 4. Count existing tickets for this event
     const existingCount = await prisma.ticket.count({
       where: { order: { eventId } },
     });
@@ -93,7 +114,7 @@ export async function POST(req: Request) {
 
     await prisma.ticket.createMany({ data: ticketsToCreate });
 
-    // 4. Create Stripe Checkout Session
+    // 5. Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",

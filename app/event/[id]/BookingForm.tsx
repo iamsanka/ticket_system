@@ -1,9 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function BookingForm({ eventId }: { eventId: string }) {
   const [loading, setLoading] = useState(false);
+  const [availability, setAvailability] = useState<{
+    adultLoungeRemaining: number;
+  } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/ticket-availability")
+      .then((res) => res.json())
+      .then((data) => setAvailability(data));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,12 +40,11 @@ export default function BookingForm({ eventId }: { eventId: string }) {
     const data = await res.json();
 
     if (!data.sessionUrl) {
-      alert("Checkout failed");
+      alert(data.error || "Checkout failed");
       setLoading(false);
       return;
     }
 
-    // ⭐ Redirect user to Stripe Checkout
     window.location.href = data.sessionUrl;
   }
 
@@ -67,14 +75,26 @@ export default function BookingForm({ eventId }: { eventId: string }) {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
+        {/* ⭐ Adult Lounge with limit */}
         <div>
           <label>Adult Lounge</label>
+
+          {availability?.adultLoungeRemaining === 0 && (
+            <p className="text-red-600 text-sm font-semibold">Sold Out</p>
+          )}
+
           <input
             name="adultLounge"
             type="number"
             min={0}
+            max={availability?.adultLoungeRemaining ?? 10}
             defaultValue={0}
-            className="border p-2 w-full text-black"
+            disabled={availability?.adultLoungeRemaining === 0}
+            className={`border p-2 w-full text-black ${
+              availability?.adultLoungeRemaining === 0
+                ? "bg-gray-200 cursor-not-allowed"
+                : ""
+            }`}
           />
         </div>
 
