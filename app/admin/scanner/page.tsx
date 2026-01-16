@@ -1,14 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import QrScanner from "qr-scanner";
 
 export default function ScannerPage() {
-  const [qrCode, setQrCode] = useState("");
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const scannerRef = useRef<QrScanner | null>(null);
+
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  async function validateTicket() {
-    if (!qrCode) return;
+  async function validate(qrCode: string) {
+    if (!scannerRef.current) return;
+
+    // 🔥 Stop scanning immediately to prevent double scans
+    scannerRef.current.stop();
 
     setLoading(true);
     setResult(null);
@@ -27,27 +33,44 @@ export default function ScannerPage() {
     }
 
     setLoading(false);
+
+    // ⏳ Cooldown before scanning again
+    setTimeout(() => {
+      setResult(null);
+      scannerRef.current?.start(); // 🔥 Restart scanner
+    }, 3000); // 3 seconds
   }
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+
+    const scanner = new QrScanner(
+      videoRef.current,
+      (qrResult) => {
+        validate(qrResult.data);
+      },
+      {
+        highlightScanRegion: true,
+        highlightCodeOutline: true,
+      }
+    );
+
+    scanner.start();
+    scannerRef.current = scanner;
+
+    return () => {
+      scanner.stop();
+    };
+  }, []);
 
   return (
     <main className="p-6 max-w-xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">QR Scanner</h1>
 
-      <div className="flex gap-2 mb-4">
-        <input
-          value={qrCode}
-          onChange={(e) => setQrCode(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && validateTicket()}
-          placeholder="Scan or enter QR code"
-          className="border p-3 flex-1 rounded"
-        />
-        <button
-          onClick={validateTicket}
-          className="bg-blue-600 text-white px-4 rounded"
-        >
-          Check
-        </button>
-      </div>
+      <video
+        ref={videoRef}
+        className="w-full max-w-sm mx-auto rounded shadow mb-6"
+      />
 
       {loading && <p className="text-gray-600 font-medium">Validating…</p>}
 

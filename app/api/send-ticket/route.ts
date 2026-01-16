@@ -27,57 +27,17 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: "Tickets already sent" });
   }
 
-  const prefix = order.event.title
-    .toUpperCase()
-    .replace(/[^A-Z]/g, "")
-    .slice(0, 20);
+  // ✅ Use existing tickets created during checkout
+  const ticketsToSend = order.tickets;
 
-  let counter = 1;
-
-  const ticketsToCreate: {
-    orderId: string;
-    category: "ADULT" | "CHILD";
-    tier: "LOUNGE" | "STANDARD";
-    qrCode: string;
-    ticketCode: string;
+  const ticketImages: {
+    category: string;
+    tier: string;
+    code: string;
+    image: string;
   }[] = [];
 
-  const pushTickets = (
-    count: number,
-    category: "ADULT" | "CHILD",
-    tier: "LOUNGE" | "STANDARD"
-  ) => {
-    for (let i = 0; i < count; i++) {
-      const ticketCode = `${prefix}-${String(counter).padStart(3, "0")}`;
-      const qrPayload = `${orderId}-${category}-${tier}-${ticketCode}`;
-
-      ticketsToCreate.push({
-        orderId,
-        category,
-        tier,
-        qrCode: qrPayload,
-        ticketCode,
-      });
-
-      counter++;
-    }
-  };
-
-  pushTickets(order.adultLounge, "ADULT", "LOUNGE");
-  pushTickets(order.adultStandard, "ADULT", "STANDARD");
-  pushTickets(order.childLounge, "CHILD", "LOUNGE");
-  pushTickets(order.childStandard, "CHILD", "STANDARD");
-
-  await prisma.ticket.createMany({ data: ticketsToCreate });
-
-  await prisma.order.update({
-    where: { id: orderId },
-    data: { ticketSent: true },
-  });
-
-  const ticketImages = [];
-
-  for (const ticket of ticketsToCreate) {
+  for (const ticket of ticketsToSend) {
     const qrBuffer = await generateQr(ticket.qrCode);
     const qrBase64 = qrBuffer.toString("base64");
 
@@ -89,13 +49,13 @@ export async function GET(req: Request) {
       venue: order.event.venue,
       category: ticket.category,
       tier: ticket.tier,
-      ticketCode: ticket.ticketCode,
+      ticketCode: ticket.ticketCode ?? "",
     });
 
     ticketImages.push({
       category: ticket.category,
       tier: ticket.tier,
-      code: ticket.ticketCode,
+      code: ticket.ticketCode ?? "",
       image: ticketImage,
     });
   }
@@ -106,5 +66,10 @@ export async function GET(req: Request) {
     order,
   });
 
-  return NextResponse.json({ message: "Tickets generated and emailed" });
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { ticketSent: true },
+  });
+
+  return NextResponse.json({ message: "Tickets emailed successfully" });
 }
