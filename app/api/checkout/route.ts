@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
-import { TicketCategory, TicketTier } from "@prisma/client";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -18,6 +17,7 @@ export async function POST(req: Request) {
       name,
       email,
       contactNo = "",
+      paymentMethod = "stripe",
     } = body;
 
     const event = await prisma.event.findUnique({
@@ -67,30 +67,30 @@ export async function POST(req: Request) {
         email,
         name,
         contactNo,
+        paymentMethod, // NEW
       },
     });
 
-    // ⭐ Build ticket categories & tiers
-    const categories: TicketCategory[] = [
-      ...Array(adultLounge).fill(TicketCategory.ADULT),
-      ...Array(adultStandard).fill(TicketCategory.ADULT),
-      ...Array(childLounge).fill(TicketCategory.CHILD),
-      ...Array(childStandard).fill(TicketCategory.CHILD),
+    // ⭐ Build ticket categories & tiers (STRING enums)
+    const categories = [
+      ...Array(adultLounge).fill("ADULT"),
+      ...Array(adultStandard).fill("ADULT"),
+      ...Array(childLounge).fill("CHILD"),
+      ...Array(childStandard).fill("CHILD"),
     ];
 
-    const tiers: TicketTier[] = [
-      ...Array(adultLounge).fill(TicketTier.LOUNGE),
-      ...Array(adultStandard).fill(TicketTier.STANDARD),
-      ...Array(childLounge).fill(TicketTier.LOUNGE),
-      ...Array(childStandard).fill(TicketTier.STANDARD),
+    const tiers = [
+      ...Array(adultLounge).fill("LOUNGE"),
+      ...Array(adultStandard).fill("STANDARD"),
+      ...Array(childLounge).fill("LOUNGE"),
+      ...Array(childStandard).fill("STANDARD"),
     ];
 
     const totalQuantity = categories.length;
 
-    // ⭐ Generate ticket codes with unique increment
+    // ⭐ Generate ticket codes with unique increment (global)
     const prefix = "00520";
 
-    // IMPORTANT: sort by ticketCode, not createdAt
     const lastTicket = await prisma.ticket.findFirst({
       orderBy: { ticketCode: "desc" },
     });
@@ -119,7 +119,26 @@ export async function POST(req: Request) {
 
     await prisma.ticket.createMany({ data: ticketsToCreate });
 
-    // ⭐ Stripe Checkout Session
+    // ⭐ Handle Edenred Pay
+    if (paymentMethod === "edenred") {
+      return NextResponse.json({
+        redirectUrl:
+          "https://myedenred.fi/affiliate-payment/YOUR-EDENRED-LINK-HERE",
+        message: "Please complete your payment using Edenred Pay.",
+        orderId: order.id,
+      });
+    }
+
+    // ⭐ Handle ePassi
+    /**if (paymentMethod === "epassi") {
+      return NextResponse.json({
+        redirectUrl: "https://YOUR-EPASSI-PAYMENT-LINK-HERE",
+        message: "Please complete your payment using ePassi.",
+        orderId: order.id,
+      });
+    }**/
+
+    // ⭐ Stripe Checkout Session (default)
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",

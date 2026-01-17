@@ -36,16 +36,14 @@ export default async function EventPage({
 
   return (
     <main className="p-6 flex flex-col items-center justify-center">
-      {/* 🎤 Event Poster Image */}
       <Image
-        src="/cover.jpeg" // Make sure this image is in your public folder
+        src="/cover.jpeg"
         alt="Event Poster"
         width={800}
         height={500}
         className="rounded-lg shadow-lg mb-8 object-cover"
       />
 
-      {/* 🎟️ Event Info */}
       <div className="max-w-2xl w-full text-center">
         <h1 className="text-4xl font-bold mb-2">{event.title}</h1>
         <p className="text-lg text-gray-700 mb-4">
@@ -54,14 +52,12 @@ export default async function EventPage({
           <strong>Venue:</strong> {event.venue}
         </p>
 
-        {/* 💸 Ticket Prices */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-black text-lg shadow-md mb-10">
           <h2 className="text-2xl font-bold text-center mb-6">
             🎟️ Ticket Prices
           </h2>
 
           <div className="space-y-6">
-            {/* Adult Section */}
             <div>
               <h3 className="text-xl font-semibold mb-2 text-center">
                 👨 Adult Tickets
@@ -76,7 +72,6 @@ export default async function EventPage({
               </div>
             </div>
 
-            {/* Child Section */}
             <div>
               <h3 className="text-xl font-semibold mb-2 text-center">
                 🧒 Child Tickets
@@ -93,7 +88,6 @@ export default async function EventPage({
           </div>
         </div>
 
-        {/* 📝 Booking Form */}
         <BookingForm eventId={event.id} />
       </div>
     </main>
