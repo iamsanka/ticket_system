@@ -67,7 +67,7 @@ export default async function EventPage({
                 <p>€{event.adultLoungePrice / 100}</p>
               </div>
               <div className="flex justify-between px-4">
-                <p>Taprobane Standard</p>
+                <p>Standard</p>
                 <p>€{event.adultStandardPrice / 100}</p>
               </div>
             </div>
@@ -81,7 +81,7 @@ export default async function EventPage({
                 <p>€{event.childLoungePrice / 100}</p>
               </div>
               <div className="flex justify-between px-4">
-                <p>Taprobane Standard</p>
+                <p>Standard</p>
                 <p>€{event.childStandardPrice / 100}</p>
               </div>
             </div>
