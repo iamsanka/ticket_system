@@ -49,14 +49,14 @@ export default function BookingForm({ eventId }: { eventId: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto">
       <div>
-        <label>Name</label>
+        <label className="block text-left font-medium mb-1">Name</label>
         <input name="name" required className="border p-2 w-full text-black" />
       </div>
 
       <div>
-        <label>Email</label>
+        <label className="block text-left font-medium mb-1">Email</label>
         <input
           name="email"
           type="email"
@@ -66,7 +66,9 @@ export default function BookingForm({ eventId }: { eventId: string }) {
       </div>
 
       <div>
-        <label>Contact Number</label>
+        <label className="block text-left font-medium mb-1">
+          Contact Number
+        </label>
         <input
           name="contact"
           required
@@ -75,14 +77,14 @@ export default function BookingForm({ eventId }: { eventId: string }) {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        {/* ⭐ Adult Lounge with limit */}
+        {/* Adult Lounge with limit */}
         <div>
-          <label>Adult Lounge</label>
-
+          <label className="block text-left font-medium mb-1">
+            Adult Lounge
+          </label>
           {availability?.adultLoungeRemaining === 0 && (
             <p className="text-red-600 text-sm font-semibold">Sold Out</p>
           )}
-
           <input
             name="adultLounge"
             type="number"
@@ -99,7 +101,9 @@ export default function BookingForm({ eventId }: { eventId: string }) {
         </div>
 
         <div>
-          <label>Adult Standard</label>
+          <label className="block text-left font-medium mb-1">
+            Adult Standard
+          </label>
           <input
             name="adultStandard"
             type="number"
@@ -110,7 +114,9 @@ export default function BookingForm({ eventId }: { eventId: string }) {
         </div>
 
         <div>
-          <label>Child Lounge</label>
+          <label className="block text-left font-medium mb-1">
+            Child Lounge
+          </label>
           <input
             name="childLounge"
             type="number"
@@ -121,7 +127,9 @@ export default function BookingForm({ eventId }: { eventId: string }) {
         </div>
 
         <div>
-          <label>Child Standard</label>
+          <label className="block text-left font-medium mb-1">
+            Child Standard
+          </label>
           <input
             name="childStandard"
             type="number"
@@ -135,7 +143,7 @@ export default function BookingForm({ eventId }: { eventId: string }) {
       <button
         type="submit"
         disabled={loading}
-        className="bg-blue-600 text-white px-4 py-2 rounded"
+        className="bg-blue-600 text-white px-4 py-2 rounded w-full"
       >
         {loading ? "Processing..." : "Pay Now"}
       </button>
