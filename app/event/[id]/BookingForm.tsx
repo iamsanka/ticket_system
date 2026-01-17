@@ -88,7 +88,7 @@ export default function BookingForm({ eventId }: { eventId: string }) {
         {/* Adult Lounge with limit */}
         <div>
           <label className="block text-left font-medium mb-1">
-            Adult Lounge
+            Adult: Taprobane Lounge
           </label>
           {availability?.adultLoungeRemaining === 0 && (
             <p className="text-red-600 text-sm font-semibold">Sold Out</p>
@@ -110,7 +110,7 @@ export default function BookingForm({ eventId }: { eventId: string }) {
 
         <div>
           <label className="block text-left font-medium mb-1">
-            Adult Standard
+            Adult: Standard
           </label>
           <input
             name="adultStandard"
@@ -123,7 +123,7 @@ export default function BookingForm({ eventId }: { eventId: string }) {
 
         <div>
           <label className="block text-left font-medium mb-1">
-            Child Lounge
+            Child: Taprobane Lounge
           </label>
           <input
             name="childLounge"
@@ -136,7 +136,7 @@ export default function BookingForm({ eventId }: { eventId: string }) {
 
         <div>
           <label className="block text-left font-medium mb-1">
-            Child Standard
+            Child: Standard
           </label>
           <input
             name="childStandard"
