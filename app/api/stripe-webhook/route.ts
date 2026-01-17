@@ -7,7 +7,6 @@ export const dynamic = "force-dynamic";
 export const preferredRegion = "auto";
 export const bodyParser = false;
 
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: Request) {
@@ -28,19 +27,21 @@ export async function POST(req: Request) {
   }
 
   // ─────────────────────────────────────────────
-  // PAYMENT SUCCESS
+  // 1. CHECKOUT SESSION COMPLETED (Stripe Checkout)
   // ─────────────────────────────────────────────
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const orderId = session.metadata?.orderId;
 
     if (orderId) {
+      console.log("✔ checkout.session.completed for order:", orderId);
+
       await prisma.order.update({
         where: { id: orderId },
         data: { paid: true },
       });
 
-      // Trigger ticket generation + email
+      // Trigger ticket email
       await fetch(
         `${process.env.NEXT_PUBLIC_URL}/api/send-ticket?orderId=${orderId}`
       );
@@ -48,13 +49,37 @@ export async function POST(req: Request) {
   }
 
   // ─────────────────────────────────────────────
-  // PAYMENT FAILED
+  // 2. PAYMENT INTENT SUCCEEDED (Card payments)
+  // ─────────────────────────────────────────────
+  if (event.type === "payment_intent.succeeded") {
+    const intent = event.data.object as Stripe.PaymentIntent;
+    const orderId = intent.metadata?.orderId;
+
+    if (orderId) {
+      console.log("✔ payment_intent.succeeded for order:", orderId);
+
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { paid: true },
+      });
+
+      // Trigger ticket email
+      await fetch(
+        `${process.env.NEXT_PUBLIC_URL}/api/send-ticket?orderId=${orderId}`
+      );
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // 3. PAYMENT FAILED
   // ─────────────────────────────────────────────
   if (event.type === "payment_intent.payment_failed") {
     const intent = event.data.object as Stripe.PaymentIntent;
     const orderId = intent.metadata?.orderId;
 
     if (orderId) {
+      console.log("❌ payment_intent.payment_failed for order:", orderId);
+
       await prisma.order.update({
         where: { id: orderId },
         data: { paid: false },
