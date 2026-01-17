@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // ⭐ STEP 1 — Adult Lounge Limit Check (100 max)
+    // ⭐ Adult Lounge Limit Check (100 max)
     if (adultLounge > 0) {
       const existingAdultLounge = await prisma.ticket.count({
         where: {
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       childLounge * event.childLoungePrice +
       childStandard * event.childStandardPrice;
 
-    // 2. Create order
+    // ⭐ Create Order
     const order = await prisma.order.create({
       data: {
         eventId,
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       },
     });
 
-    // 3. Generate ticket categories and tiers for this order only
+    // ⭐ Build ticket categories & tiers
     const categories: TicketCategory[] = [
       ...Array(adultLounge).fill(TicketCategory.ADULT),
       ...Array(adultStandard).fill(TicketCategory.ADULT),
@@ -87,21 +87,26 @@ export async function POST(req: Request) {
 
     const totalQuantity = categories.length;
 
-    // 4. Count existing tickets for this event
-    const existingCount = await prisma.ticket.count({
-      where: { order: { eventId } },
+    // ⭐ Generate ticket codes with unique increment
+    const prefix = "00520";
+
+    // IMPORTANT: sort by ticketCode, not createdAt
+    const lastTicket = await prisma.ticket.findFirst({
+      orderBy: { ticketCode: "desc" },
     });
 
-    const prefix = event.title
-      .toUpperCase()
-      .replace(/[^A-Z]/g, "")
-      .slice(0, 20);
+    let startNumber = 1;
+
+    if (lastTicket?.ticketCode) {
+      const lastIncrement = parseInt(lastTicket.ticketCode.slice(-4));
+      startNumber = lastIncrement + 1;
+    }
 
     const ticketsToCreate = [];
 
     for (let i = 0; i < totalQuantity; i++) {
-      const counter = existingCount + i + 1;
-      const ticketCode = `${prefix}-${String(counter).padStart(4, "0")}`;
+      const paddedIncrement = String(startNumber + i).padStart(4, "0");
+      const ticketCode = `SSAN-${prefix}${paddedIncrement}`;
 
       ticketsToCreate.push({
         orderId: order.id,
@@ -114,7 +119,7 @@ export async function POST(req: Request) {
 
     await prisma.ticket.createMany({ data: ticketsToCreate });
 
-    // 5. Create Stripe Checkout Session
+    // ⭐ Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",

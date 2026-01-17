@@ -7,6 +7,25 @@ registerFont(
   { family: "Geist" }
 );
 
+// Format date like "24th April 2026"
+function formatEventDate(dateString: string) {
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.toLocaleString("en-US", { month: "long" });
+  const year = date.getFullYear();
+
+  const suffix =
+    day % 10 === 1 && day !== 11
+      ? "st"
+      : day % 10 === 2 && day !== 12
+      ? "nd"
+      : day % 10 === 3 && day !== 13
+      ? "rd"
+      : "th";
+
+  return `${day}${suffix} ${month} ${year}`;
+}
+
 type TicketImageParams = {
   qrPng: string;
   event: string;
@@ -33,12 +52,23 @@ export async function generateBrandedTicket({
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
 
-  // Gradient background
+  // Background gradient
   const gradient = ctx.createLinearGradient(0, 0, width, height);
   gradient.addColorStop(0, "#0A1A2F");
   gradient.addColorStop(1, "#1C2E4A");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
+
+  // CHILD badge at top center
+  if (category === "CHILD") {
+    ctx.font = "bold 48px Geist";
+    ctx.fillStyle = "#FFFFFF";
+    const label = "CHILD";
+    const textWidth = ctx.measureText(label).width;
+    const textX = (width - textWidth) / 2;
+    const textY = 70;
+    ctx.fillText(label, textX, textY);
+  }
 
   // Load logo
   const logoPath = path.join(process.cwd(), "public", "logo.png");
@@ -56,11 +86,14 @@ export async function generateBrandedTicket({
   const infoY = 260;
   const lineHeight = 40;
 
+  const formattedDate = formatEventDate(date);
+  const displayTier = tier === "LOUNGE" ? "Taprobane Lounge" : tier;
+
   ctx.fillText(`👤 Name: ${name || "Guest"}`, 40, infoY + lineHeight * 0);
-  ctx.fillText(`📅 Date: ${date || "N/A"}`, 40, infoY + lineHeight * 1);
+  ctx.fillText(`📅 Date: ${formattedDate}`, 40, infoY + lineHeight * 1);
   ctx.fillText(`📍 Venue: ${venue || "N/A"}`, 40, infoY + lineHeight * 2);
   ctx.fillText(`🗂️ Category: ${category}`, 40, infoY + lineHeight * 3);
-  ctx.fillText(`🪑 Tier: ${tier}`, 40, infoY + lineHeight * 4);
+  ctx.fillText(`🪑 Tier: ${displayTier}`, 40, infoY + lineHeight * 4);
   ctx.fillText(`🔢 Code: ${ticketCode}`, 40, infoY + lineHeight * 5);
 
   // QR Code
@@ -80,22 +113,26 @@ export async function generateBrandedTicket({
   ctx.fillStyle = "#CCCCCC";
   ctx.fillText("Scan at entry", qrX + 40, qrY + qrSize + 30);
 
-  // ⭐ VIP BADGE (only for LOUNGE tier)
+  // VIP badge for Lounge tier
   if (tier === "LOUNGE") {
     const badgeX = width - 300;
     const badgeY = 80;
     const badgeWidth = 240;
     const badgeHeight = 60;
 
-    // Badge background
-    const vipGradient = ctx.createLinearGradient(badgeX, badgeY, badgeX + badgeWidth, badgeY + badgeHeight);
-    vipGradient.addColorStop(0, "#D4AF37"); // gold
-    vipGradient.addColorStop(1, "#B8860B"); // darker gold
+    const vipGradient = ctx.createLinearGradient(
+      badgeX,
+      badgeY,
+      badgeX + badgeWidth,
+      badgeY + badgeHeight
+    );
+    vipGradient.addColorStop(0, "#D4AF37");
+    vipGradient.addColorStop(1, "#B8860B");
+
     ctx.fillStyle = vipGradient;
     ctx.roundRect(badgeX, badgeY, badgeWidth, badgeHeight, 12);
     ctx.fill();
 
-    // VIP text
     const vipText = "⭐ VIP ACCESS";
     ctx.font = "bold 28px Geist";
     ctx.fillStyle = "#000000";
@@ -105,10 +142,10 @@ export async function generateBrandedTicket({
     ctx.fillText(vipText, textX, textY);
   }
 
-  // Footer seal
+  // Footer
   ctx.font = "16px Geist";
   ctx.fillStyle = "#888";
-  ctx.fillText("Powered by Taprobane Entertainment", 40, height - 30);
+  ctx.fillText("Powered by Taprobane Entertainment Oy", 40, height - 30);
 
   return canvas.toDataURL("image/png");
 }
