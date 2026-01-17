@@ -169,7 +169,7 @@ export default function BookingForm({ eventId }: { eventId: string }) {
         disabled={loading}
         className="bg-blue-600 text-white px-4 py-2 rounded w-full"
       >
-        {loading ? "Processing..." : "Pay Now"}
+        {loading ? "Processing..." : "Buy Tickets"}
       </button>
     </form>
   );
