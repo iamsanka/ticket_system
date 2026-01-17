@@ -29,6 +29,7 @@ export default function BookingForm({ eventId }: { eventId: string }) {
       adultStandard: Number(form.get("adultStandard")),
       childLounge: Number(form.get("childLounge")),
       childStandard: Number(form.get("childStandard")),
+      paymentMethod: form.get("paymentMethod"),
     };
 
     const res = await fetch("/api/checkout", {
@@ -39,6 +40,13 @@ export default function BookingForm({ eventId }: { eventId: string }) {
 
     const data = await res.json();
 
+    // Edenred / ePassi redirect
+    if (data.redirectUrl) {
+      window.location.href = data.redirectUrl;
+      return;
+    }
+
+    // Stripe flow
     if (!data.sessionUrl) {
       alert(data.error || "Checkout failed");
       setLoading(false);
@@ -138,6 +146,22 @@ export default function BookingForm({ eventId }: { eventId: string }) {
             className="border p-2 w-full text-black"
           />
         </div>
+      </div>
+
+      {/* Payment Method */}
+      <div>
+        <label className="block text-left font-medium mb-1">
+          Payment Method
+        </label>
+        <select
+          name="paymentMethod"
+          required
+          className="border p-2 w-full text-black"
+        >
+          <option value="stripe">Card (Stripe)</option>
+          <option value="edenred">Edenred Pay</option>
+          {/**<option value="epassi">ePassi</option>**/}
+        </select>
       </div>
 
       <button

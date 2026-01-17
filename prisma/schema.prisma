@@ -49,9 +49,6 @@ model Order {
 
   totalAmount  Int
 
-  // REMOVED: stripeIntent (no longer needed)
-  // stripeIntent String?
-
   // NEW: Stripe Checkout webhook confirmation
   paid        Boolean  @default(false)
 
@@ -63,6 +60,9 @@ model Order {
   email       String
   contactNo   String?
   name        String?
+
+  // ⭐ NEW FIELD FOR EDENRED / EPASSI / STRIPE
+  paymentMethod String?   // <── REQUIRED
 
   // Prevent duplicate email sends
   ticketSent  Boolean @default(false)
