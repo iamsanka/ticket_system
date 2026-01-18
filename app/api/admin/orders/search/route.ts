@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import type { Order } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
@@ -12,7 +13,7 @@ export async function POST(req: Request) {
       );
     }
 
-    let orders = [];
+    let orders: Order[] = [];
 
     if (contactNo) {
       orders = await prisma.order.findMany({
@@ -29,20 +30,24 @@ export async function POST(req: Request) {
         orderBy: { createdAt: "desc" },
       });
     } else if (ticketCode) {
-      const ticket = await prisma.ticket.findUnique({
+      // 1) Find the ticket by ticketCode (not unique in schema)
+      const ticket = await prisma.ticket.findFirst({
         where: { ticketCode },
-        include: {
-          order: {
-            include: {
-              tickets: true,
-              event: true,
-            },
-          },
-        },
       });
 
-      if (ticket?.order) {
-        orders = [ticket.order];
+      if (ticket) {
+        // 2) Load the related order via orderId
+        const order = await prisma.order.findUnique({
+          where: { id: ticket.orderId },
+          include: {
+            tickets: true,
+            event: true,
+          },
+        });
+
+        if (order) {
+          orders = [order];
+        }
       }
     }
 
