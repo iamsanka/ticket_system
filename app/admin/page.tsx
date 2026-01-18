@@ -30,6 +30,13 @@ export default function StaffDashboard() {
         </button>
 
         <button
+          onClick={() => router.push("/admin/orders")}
+          className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg text-xl font-semibold"
+        >
+          Order Management
+        </button>
+
+        <button
           onClick={logout}
           className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg text-xl font-semibold mt-6"
         >

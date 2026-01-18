@@ -18,7 +18,7 @@
         "name": "next"
       }
     ],
-    "baseUrl": ".",                      // ✅ ADD THIS LINE
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     }
@@ -30,6 +30,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "app/api/send-ticket/route.js", "prisma.config.ts.bak"  ],
+, "app/api/send-ticket/route.js", "prisma.config.ts.bak", "middleware.ts.bak"  ],
   "exclude": ["node_modules"]
 }

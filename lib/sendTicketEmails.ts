@@ -19,10 +19,14 @@ export async function sendTicketEmail({
     },
   });
 
-  const attachments = tickets.map((t) => ({
-    filename: `${t.code}.png`,
-    content: Buffer.from(t.image.split(",")[1], "base64"),
-  }));
+  // Attach branded ticket images (base64 → Buffer)
+  const attachments = tickets.map((t) => {
+    const base64Data = t.image.split(",")[1] || "";
+    return {
+      filename: `${t.code}.png`,
+      content: Buffer.from(base64Data, "base64"),
+    };
+  });
 
   const formattedDate = new Date(order.event.date).toLocaleDateString("en-GB", {
     day: "numeric",
@@ -79,7 +83,7 @@ export async function sendTicketEmail({
         </p>
 
         <p style="margin-top: 40px; font-size: 13px; color: #777;">
-          Powered by <strong>Taprobane Entertainment</strong>
+          Powered by <strong>Taprobane Entertainment Oy</strong>
         </p>
       </div>
     `,
