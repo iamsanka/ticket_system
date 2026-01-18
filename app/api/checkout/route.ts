@@ -28,7 +28,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // ⭐ Adult Lounge Limit Check (100 max)
+    // ─────────────────────────────────────────────
+    // Adult Lounge Limit Check (100 max)
+    // ─────────────────────────────────────────────
     if (adultLounge > 0) {
       const existingAdultLounge = await prisma.ticket.count({
         where: {
@@ -49,13 +51,35 @@ export async function POST(req: Request) {
       }
     }
 
-    const totalAmount =
+    // ─────────────────────────────────────────────
+    // Base ticket total
+    // ─────────────────────────────────────────────
+    let totalAmount =
       adultLounge * event.adultLoungePrice +
       adultStandard * event.adultStandardPrice +
       childLounge * event.childLoungePrice +
       childStandard * event.childStandardPrice;
 
-    // ⭐ Create Order
+    // ─────────────────────────────────────────────
+    // Generic service fee (Edenred, ePassi, etc.)
+    // ─────────────────────────────────────────────
+    let serviceFee = 0;
+
+    // Edenred 5% fee
+    if (paymentMethod === "edenred") {
+      serviceFee = Math.round(totalAmount * 0.05);
+      totalAmount += serviceFee;
+    }
+
+    // ePassi fee (if added later)
+    if (paymentMethod === "epassi") {
+      serviceFee = Math.round(totalAmount * 0.05);
+      totalAmount += serviceFee;
+    }
+
+    // ─────────────────────────────────────────────
+    // Create Order
+    // ─────────────────────────────────────────────
     const order = await prisma.order.create({
       data: {
         eventId,
@@ -64,14 +88,17 @@ export async function POST(req: Request) {
         childLounge,
         childStandard,
         totalAmount,
+        serviceFee, // ⭐ stored here
         email,
         name,
         contactNo,
-        paymentMethod, // NEW
+        paymentMethod,
       },
     });
 
-    // ⭐ Build ticket categories & tiers (STRING enums)
+    // ─────────────────────────────────────────────
+    // Build ticket categories & tiers
+    // ─────────────────────────────────────────────
     const categories = [
       ...Array(adultLounge).fill("ADULT"),
       ...Array(adultStandard).fill("ADULT"),
@@ -88,7 +115,9 @@ export async function POST(req: Request) {
 
     const totalQuantity = categories.length;
 
-    // ⭐ Generate ticket codes with unique increment (global)
+    // ─────────────────────────────────────────────
+    // Generate ticket codes
+    // ─────────────────────────────────────────────
     const prefix = "00520";
 
     const lastTicket = await prisma.ticket.findFirst({
@@ -119,7 +148,9 @@ export async function POST(req: Request) {
 
     await prisma.ticket.createMany({ data: ticketsToCreate });
 
-    // ⭐ Handle Edenred Pay
+    // ─────────────────────────────────────────────
+    // Edenred Redirect
+    // ─────────────────────────────────────────────
     if (paymentMethod === "edenred") {
       return NextResponse.json({
         redirectUrl:
@@ -129,16 +160,9 @@ export async function POST(req: Request) {
       });
     }
 
-    // ⭐ Handle ePassi
-    /**if (paymentMethod === "epassi") {
-      return NextResponse.json({
-        redirectUrl: "https://YOUR-EPASSI-PAYMENT-LINK-HERE",
-        message: "Please complete your payment using ePassi.",
-        orderId: order.id,
-      });
-    }**/
-
-    // ⭐ Stripe Checkout Session (default)
+    // ─────────────────────────────────────────────
+    // Stripe Checkout Session (default)
+    // ─────────────────────────────────────────────
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",

@@ -1,0 +1,35 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+export function middleware(req: NextRequest) {
+  const session = req.cookies.get("admin_session")?.value;
+
+  // Only treat as logged in if the cookie is exactly "true"
+  const isLoggedIn = session === "true";
+
+  const path = req.nextUrl.pathname;
+  const isLoginPage = path.startsWith("/admin/login");
+  const isAdminPage =
+    path.startsWith("/admin") && !path.startsWith("/api/admin");
+
+  // If NOT logged in → block admin pages (but not login)
+  if (!isLoggedIn && isAdminPage && !isLoginPage) {
+    return NextResponse.redirect(new URL("/admin/login", req.url));
+  }
+
+  // If logged in → prevent access to login page
+  if (isLoggedIn && isLoginPage) {
+    return NextResponse.redirect(new URL("/admin", req.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    "/admin",
+    "/admin/",
+    "/admin/:path*",
+    "!/api/admin/:path*"
+  ],
+};

@@ -49,7 +49,10 @@ model Order {
 
   totalAmount  Int
 
-  // NEW: Stripe Checkout webhook confirmation
+  // Generic service fee (Edenred, ePassi, etc.)
+  serviceFee   Int? @default(0)
+
+  // Stripe webhook confirmation
   paid        Boolean  @default(false)
 
   // Optional: still useful for admin dashboards
@@ -61,11 +64,15 @@ model Order {
   contactNo   String?
   name        String?
 
-  // ⭐ NEW FIELD FOR EDENRED / EPASSI / STRIPE
-  paymentMethod String?   // <── REQUIRED
+  // Payment method: stripe, edenred, epassi
+  paymentMethod String?
 
   // Prevent duplicate email sends
   ticketSent  Boolean @default(false)
+
+  // ⭐ NEW: Admin verification fields
+  receiptUrl  String?   // uploaded screenshot
+  receiptNote String?   // admin notes or Edenred reference
 
   event       Event    @relation(fields: [eventId], references: [id])
   tickets     Ticket[]
