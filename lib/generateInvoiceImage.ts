@@ -1,8 +1,7 @@
-// lib/generateInvoiceImage.ts
-
 import { createCanvas, loadImage, registerFont } from "canvas";
 import path from "path";
 
+// Register Geist font
 registerFont(path.join(process.cwd(), "public", "fonts", "Geist-Regular.ttf"), {
   family: "Geist",
 });
@@ -66,7 +65,7 @@ export async function generateInvoiceImage(order: any, tickets: any[]) {
   ctx.font = "24px Geist";
   ctx.fillStyle = "#f5f5f5";
   ctx.fillText("Taprobane Entertainment Oy", 650, 380);
-  ctx.fillText("Business ID: 1234567-8", 650, 420);
+  ctx.fillText("Business ID: 3581857-4", 650, 420);
   ctx.fillText("info@taprobane.fi", 650, 460);
   ctx.fillText("www.taprobane.fi", 650, 500);
 
@@ -82,11 +81,7 @@ export async function generateInvoiceImage(order: any, tickets: any[]) {
   ctx.font = "24px Geist";
   ctx.fillText(order.event.title, 60, 600);
   ctx.fillText(order.event.venue, 60, 640);
-  ctx.fillText(
-    new Date(order.event.date).toLocaleString("en-GB"),
-    60,
-    680
-  );
+  ctx.fillText("24th April 2026, 19:00", 60, 680); // fixed display
 
   // Tickets table header
   let y = 780;
@@ -106,12 +101,14 @@ export async function generateInvoiceImage(order: any, tickets: any[]) {
   y += 80;
 
   const total = order.totalAmount / 100;
-  const vat = total * 0.135;
-  const net = total - vat;
+
+  // Correct reverse VAT for 13.5% included
+  const netTotal = (total / 113.5) * 100;
+  const vatTotal = total - netTotal;
 
   const perTicket = total / tickets.length;
-  const perTicketVat = perTicket * 0.135;
-  const perTicketNet = perTicket - perTicketVat;
+  const perTicketNet = (perTicket / 113.5) * 100;
+  const perTicketVat = perTicket - perTicketNet;
 
   for (const t of tickets) {
     ctx.fillStyle = "#1a1a1a";
@@ -142,11 +139,15 @@ export async function generateInvoiceImage(order: any, tickets: any[]) {
 
   ctx.font = "24px Geist";
   ctx.fillStyle = "#f5f5f5";
-  ctx.fillText(`Total excl. VAT: ${net.toFixed(2)} €`, 40, y);
+  ctx.fillText(`Total excl. VAT: ${netTotal.toFixed(2)} €`, 40, y);
   y += 40;
-  ctx.fillText(`VAT 13.5%: ${vat.toFixed(2)} €`, 40, y);
+  ctx.fillText(`VAT 13.5%: ${vatTotal.toFixed(2)} €`, 40, y);
   y += 40;
-  ctx.fillText(`Service fee: ${(order.serviceFee / 100).toFixed(2)} €`, 40, y);
+  ctx.fillText(
+    `Service fee: ${(order.serviceFee / 100).toFixed(2)} €`,
+    40,
+    y
+  );
   y += 40;
 
   ctx.fillStyle = "#d4af37";
