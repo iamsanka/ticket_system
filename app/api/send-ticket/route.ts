@@ -1,4 +1,4 @@
-// FILE: app/api/send-ticket/route.ts
+// app/api/send-ticket/route.ts
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -27,7 +27,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: "Tickets already sent" });
   }
 
-  // ✅ Use existing tickets created during checkout
   const ticketsToSend = order.tickets;
 
   const ticketImages: {
