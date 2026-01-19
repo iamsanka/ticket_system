@@ -32,7 +32,7 @@ export async function generateInvoiceImage(order: any, tickets: any[]) {
   // Header text
   ctx.fillStyle = "#000";
   ctx.font = "bold 48px Geist";
-  ctx.fillText("TAPROBANE CINEMA", 200, 90);
+  ctx.fillText("Taprobane Entertainment Oy", 200, 90);
 
   ctx.font = "28px Geist";
   ctx.fillText("INVOICE", 200, 140);
