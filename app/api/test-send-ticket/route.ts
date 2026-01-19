@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const testOrderId = "cmkl07o8s000gb2ect0jyr6ph";
+  const testOrderId = "cmkl13p0z0001b2vkxzxy9igo";
 
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_URL}/api/send-ticket?orderId=${testOrderId}`

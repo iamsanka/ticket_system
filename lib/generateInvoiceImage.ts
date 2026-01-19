@@ -6,7 +6,13 @@ registerFont(path.join(process.cwd(), "public", "fonts", "Geist-Regular.ttf"), {
   family: "Geist",
 });
 
-export async function generateInvoiceImage(order: any, tickets: any[]) {
+type Ticket = {
+  category: string;
+  tier: string;
+  code: string;
+};
+
+export async function generateInvoiceImage(order: any, tickets: Ticket[]) {
   const width = 1200;
   const height = 1800;
   const canvas = createCanvas(width, height);
@@ -34,7 +40,7 @@ export async function generateInvoiceImage(order: any, tickets: any[]) {
   ctx.fillText("Taprobane Entertainment Oy", 200, 90);
 
   ctx.font = "28px Geist";
-  ctx.fillText("INVOICE", 200, 140);
+  ctx.fillText("Receipt", 200, 140);
 
   // White text section
   ctx.fillStyle = "#f5f5f5";
@@ -81,7 +87,21 @@ export async function generateInvoiceImage(order: any, tickets: any[]) {
   ctx.font = "24px Geist";
   ctx.fillText(order.event.title, 60, 600);
   ctx.fillText(order.event.venue, 60, 640);
-  ctx.fillText("24th April 2026, 19:00", 60, 680); // fixed display
+  ctx.fillText("24th April 2026, 19:00", 60, 680);
+
+  // Group tickets by category + tier
+  const grouped: Record<string, { label: string; qty: number }> = {};
+  for (const t of tickets) {
+    const key = `${t.category}-${t.tier}`;
+    if (!grouped[key]) {
+      grouped[key] = {
+        label: `Ticket ${t.category} ${t.tier}`,
+        qty: 1,
+      };
+    } else {
+      grouped[key].qty += 1;
+    }
+  }
 
   // Tickets table header
   let y = 780;
@@ -97,34 +117,32 @@ export async function generateInvoiceImage(order: any, tickets: any[]) {
   ctx.fillText("VAT", 820, y + 40);
   ctx.fillText("Total", 980, y + 40);
 
-  // Ticket rows
   y += 80;
 
   const total = order.totalAmount / 100;
-
-  // Correct reverse VAT for 13.5% included
-  const netTotal = (total / 113.5) * 100;
+  const netTotal = total / 1.135;
   const vatTotal = total - netTotal;
 
   const perTicket = total / tickets.length;
-  const perTicketNet = (perTicket / 113.5) * 100;
+  const perTicketNet = perTicket / 1.135;
   const perTicketVat = perTicket - perTicketNet;
 
-  for (const t of tickets) {
+  for (const key in grouped) {
+    const { label, qty } = grouped[key];
+    const rowTotal = perTicket * qty;
+    const rowNet = perTicketNet * qty;
+    const rowVat = perTicketVat * qty;
+
     ctx.fillStyle = "#1a1a1a";
     ctx.fillRect(40, y - 20, width - 80, 70);
 
     ctx.fillStyle = "#f5f5f5";
     ctx.font = "22px Geist";
-    ctx.fillText(`Ticket ${t.category} ${t.tier}`, 60, y + 20);
-    ctx.fillText("1", 500, y + 20);
-    ctx.fillText(`${perTicketNet.toFixed(2)} €`, 650, y + 20);
-    ctx.fillText(`${perTicketVat.toFixed(2)} €`, 820, y + 20);
-    ctx.fillText(`${perTicket.toFixed(2)} €`, 980, y + 20);
-
-    ctx.font = "18px Geist";
-    ctx.fillStyle = "#999";
-    ctx.fillText(`Code: ${t.code}`, 60, y + 50);
+    ctx.fillText(label, 60, y + 20);
+    ctx.fillText(`${qty}`, 500, y + 20);
+    ctx.fillText(`${rowNet.toFixed(2)} €`, 650, y + 20);
+    ctx.fillText(`${rowVat.toFixed(2)} €`, 820, y + 20);
+    ctx.fillText(`${rowTotal.toFixed(2)} €`, 980, y + 20);
 
     y += 90;
   }
