@@ -6,6 +6,7 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
+import { useRouter } from "next/navigation";
 
 export function CheckoutForm({
   amount,
@@ -16,6 +17,8 @@ export function CheckoutForm({
 }) {
   const stripe = useStripe();
   const elements = useElements();
+  const router = useRouter();
+
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -39,7 +42,9 @@ export function CheckoutForm({
     }
 
     if (paymentIntent?.status === "succeeded") {
-      onSuccess?.(paymentIntent.id);
+      // Redirect to thank-you page
+      router.push("/thank-you");
+      return;
     }
 
     setLoading(false);
