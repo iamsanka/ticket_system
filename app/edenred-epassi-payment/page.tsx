@@ -1,240 +1,114 @@
-// app/edenred-epassi-payment/page.tsx
-"use client";
+import { prisma } from "@/lib/prisma";
+import { notFound } from "next/navigation";
+import { generateQr } from "@/lib/generateQr";
 
-import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import QRCode from "qrcode";
+export default async function EdenredPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ orderId?: string }>;
+}) {
+  const { orderId } = await searchParams;
 
-type PaymentMethod = "edenred" | "epassi";
+  if (!orderId) return notFound();
 
-export default function EdenredEpassiPaymentPage() {
-  const params = useSearchParams();
-  const router = useRouter();
-  const orderId = params.get("orderId");
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      totalAmount: true,
+      event: {
+        select: {
+          title: true,
+          date: true,
+        },
+      },
+    },
+  });
 
-  const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(
-    null,
-  );
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [isAndroid, setIsAndroid] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  if (!order) return notFound();
 
-  const EDENRED_LINK =
-    "https://myedenred.fi/affiliate-payment/d0cd66d3-ee1f-4535-b8ed-a8dffa5320e7";
+  const totalEuro = (order.totalAmount / 100).toFixed(2);
+  const eventTitle = order.event.title;
+  const eventDate = new Date(order.event.date).toLocaleDateString("fi-FI");
 
-  const EPASSI_ANDROID_INTENT =
-    "intent://epassi/#Intent;scheme=epassi;package=com.epassi.app;end;";
+  const edenredUrl = process.env.EDENRED_PAYMENT_URL;
+  if (!edenredUrl) throw new Error("Missing EDENRED_PAYMENT_URL in .env");
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const ua =
-        navigator.userAgent || navigator.vendor || (window as any).opera;
-      setIsAndroid(/android/i.test(ua));
-      setIsIOS(/iPad|iPhone|iPod/.test(ua));
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!orderId) return;
-
-    async function loadOrder() {
-      const res = await fetch(`/api/order/${orderId}`);
-      const data = await res.json();
-
-      if (data?.order?.paymentMethod) {
-        const method = data.order.paymentMethod as PaymentMethod;
-        setPaymentMethod(method);
-
-        if (method === "edenred") {
-          const qr = await QRCode.toDataURL(EDENRED_LINK);
-          setQrDataUrl(qr);
-        }
-      }
-    }
-
-    loadOrder();
-  }, [orderId]);
-
-  if (!orderId) {
-    return <div style={{ padding: 40, color: "white" }}>Missing order ID</div>;
-  }
-
-  if (!paymentMethod) {
-    return <div style={{ padding: 40, color: "white" }}>Loading...</div>;
-  }
-
-  const handleContinue = async () => {
-    setLoading(true);
-
-    await fetch("/api/order/set-awaiting-verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId }),
-    });
-
-    router.push("/thank-you");
-  };
-
-  const handleOpenEpassi = () => {
-    if (isAndroid) {
-      window.location.href = EPASSI_ANDROID_INTENT;
-    } else if (isIOS) {
-      alert(
-        "Please open the ePassi app on your iPhone, search for 'Taprobane Entertainment', and complete the payment there.",
-      );
-    } else {
-      alert(
-        "Please open the ePassi app on your phone, search for 'Taprobane Entertainment', and complete the payment there.",
-      );
-    }
-  };
+  const qrBuffer = await generateQr(edenredUrl);
+  const qrBase64 = `data:image/png;base64,${qrBuffer.toString("base64")}`;
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#050505",
-        padding: "40px 16px",
-        color: "white",
-      }}
-    >
-      <div style={{ maxWidth: 600, margin: "0 auto" }}>
-        <h1 style={{ textAlign: "center", marginBottom: 24 }}>
+    <div className="min-h-screen bg-gray-900 text-white p-6">
+      <div className="max-w-xl mx-auto space-y-8">
+        <h1 className="text-2xl font-bold text-center">
           Complete Your Payment
         </h1>
 
-        {/* EDENRED FLOW */}
-        {paymentMethod === "edenred" && (
-          <>
-            <h3>1. Scan to open Edenred</h3>
-            <p style={{ marginTop: 8, marginBottom: 12 }}>
-              Scan this QR code with your phone camera. It will open the Edenred
-              payment page. If the Edenred app is installed, it may open there.
-            </p>
+        {/* Total Amount */}
+        <div className="bg-gray-800 border border-gray-700 p-4 rounded text-lg font-semibold text-center">
+          Total to Pay: <span className="text-yellow-400">€{totalEuro}</span>
+        </div>
 
-            <div
-              style={{ marginTop: 12, marginBottom: 30, textAlign: "center" }}
-            >
-              {qrDataUrl && (
-                <img
-                  src={qrDataUrl}
-                  alt="Edenred QR"
-                  style={{ width: 240, height: 240, margin: "0 auto" }}
-                />
-              )}
-            </div>
+        {/* Event Info */}
+        <div className="text-center text-sm text-gray-400">
+          <p>{eventTitle}</p>
+          <p>{eventDate}</p>
+        </div>
 
-            <p style={{ marginBottom: 24 }}>
-              If the QR does not work, you can also open Edenred and search for{" "}
-              <strong>“Taprobane Entertainment”</strong> and complete the
-              payment there.
-            </p>
-          </>
-        )}
+        {/* Step 1 */}
+        <div className="bg-gray-800 p-4 rounded-lg space-y-3">
+          <h2 className="font-semibold text-lg">
+            Step 1: Scan to open Edenred
+          </h2>
+          <p className="text-sm text-gray-300">
+            Scan the QR code below with your phone camera to open Edenred. If
+            the app is installed, it may open automatically.
+          </p>
+          <div className="flex justify-center">
+            <img
+              src={qrBase64}
+              alt="Edenred QR"
+              className="w-48 h-48 border rounded"
+            />
+          </div>
+          <p className="text-sm text-gray-300">
+            Or open Edenred manually and search for{" "}
+            <strong className="text-white">Taprobane Entertainment</strong>.
+          </p>
+        </div>
 
-        {/* EPASSI FLOW */}
-        {paymentMethod === "epassi" && (
-          <>
-            <h3>1. Open ePassi</h3>
-            <p style={{ marginTop: 8, marginBottom: 12 }}>
-              Open the ePassi app on your phone and search for{" "}
-              <strong>“Taprobane Entertainment”</strong>. Use the merchant
-              details below to confirm you are paying the correct account.
-            </p>
-
-            <div style={{ marginTop: 16, marginBottom: 24 }}>
-              <p>
-                <strong>Site-ID:</strong> 15964182
-              </p>
-              <p>
-                <strong>MAC-key:</strong> IJJS9JI9JWR8
-              </p>
-            </div>
-
-            <button
-              onClick={handleOpenEpassi}
-              style={{
-                width: "100%",
-                padding: "12px",
-                background: "#5A2D82",
-                color: "white",
-                borderRadius: 8,
-                fontWeight: 600,
-                marginBottom: 24,
-                cursor: "pointer",
-              }}
-            >
-              Open ePassi App
-            </button>
-
-            <p style={{ marginBottom: 24, fontSize: 14, opacity: 0.9 }}>
-              If the button does not open the app, please open the ePassi app
-              manually on your phone, search for{" "}
-              <strong>“Taprobane Entertainment”</strong>, and complete the
-              payment there.
-            </p>
-          </>
-        )}
-
-        {/* WHATSAPP SECTION */}
-        <h3>2. Send screenshot via WhatsApp</h3>
-
-        <div style={{ marginTop: 16 }}>
+        {/* Step 2 */}
+        <div className="bg-gray-800 p-4 rounded-lg space-y-3">
+          <h2 className="font-semibold text-lg">
+            Step 2: Send Screenshot via WhatsApp
+          </h2>
           <a
-            href="https://wa.me/358442363616?text=Hello%2C%20I%20have%20completed%20my%20payment.%20Here%20is%20my%20screenshot%20for%20verification."
-            style={{
-              display: "block",
-              background: "#25D366",
-              padding: "12px 16px",
-              borderRadius: 8,
-              marginBottom: 12,
-              textAlign: "center",
-              color: "black",
-              fontWeight: 600,
-            }}
+            href="https://wa.me/358442363616"
+            className="block bg-green-600 text-white p-3 rounded text-center font-semibold"
           >
             Send to WhatsApp (+358 44 236 3616)
           </a>
-
           <a
-            href="https://wa.me/358442363618?text=Hello%2C%20I%20have%20completed%20my%20payment.%20Here%20is%20my%20screenshot%20for%20verification."
-            style={{
-              display: "block",
-              background: "#25D366",
-              padding: "12px 16px",
-              borderRadius: 8,
-              textAlign: "center",
-              color: "black",
-              fontWeight: 600,
-            }}
+            href="https://wa.me/358442363618"
+            className="block bg-green-600 text-white p-3 rounded text-center font-semibold"
           >
             Send to WhatsApp (+358 44 236 3618)
           </a>
         </div>
 
-        {/* CONTINUE BUTTON */}
-        <h3 style={{ marginTop: 32 }}>3. Continue</h3>
-        <p style={{ marginBottom: 16 }}>
-          After sending your screenshot, click continue. We will verify your
-          payment and send your tickets.
-        </p>
-
-        <button
-          onClick={handleContinue}
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: "12px",
-            background: "#FFD700",
-            color: "black",
-            borderRadius: 8,
-            fontWeight: 600,
-            cursor: loading ? "wait" : "pointer",
-          }}
-        >
-          {loading ? "Processing..." : "Continue"}
-        </button>
+        {/* Step 3 */}
+        <div className="bg-gray-800 p-4 rounded-lg space-y-3">
+          <h2 className="font-semibold text-lg">Step 3: Continue</h2>
+          <p className="text-sm text-gray-300">
+            After sending the screenshot, click continue. We will verify your
+            payment and send your tickets.
+          </p>
+          <a
+            href="/thank-you"
+            className="block bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-3 rounded text-center"
+          >
+            Continue
+          </a>
+        </div>
       </div>
     </div>
   );
