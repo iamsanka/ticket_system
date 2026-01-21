@@ -27,7 +27,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ message: "Tickets already sent" });
   }
 
-  const ticketsToSend = order.tickets;
+  if (!order.tickets || order.tickets.length === 0) {
+    return NextResponse.json(
+      { error: "No tickets exist for this order" },
+      { status: 400 }
+    );
+  }
 
   const ticketImages: {
     category: string;
@@ -36,7 +41,7 @@ export async function GET(req: Request) {
     image: string;
   }[] = [];
 
-  for (const ticket of ticketsToSend) {
+  for (const ticket of order.tickets) {
     const qrBuffer = await generateQr(ticket.qrCode);
     const qrBase64 = qrBuffer.toString("base64");
 
@@ -44,7 +49,7 @@ export async function GET(req: Request) {
       qrPng: qrBase64,
       event: order.event.title,
       name: order.name ?? "Guest",
-      date: new Date(order.event.date).toLocaleDateString(),
+      date: order.event.date.toISOString().split("T")[0],
       venue: order.event.venue,
       category: ticket.category,
       tier: ticket.tier,

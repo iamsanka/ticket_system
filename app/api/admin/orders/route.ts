@@ -21,8 +21,6 @@ export async function GET(req: Request) {
         : undefined,
     },
     orderBy: { createdAt: "asc" },
-
-    // Only return fields the UI actually uses
     select: {
       id: true,
       name: true,
@@ -32,6 +30,11 @@ export async function GET(req: Request) {
       adultStandard: true,
       childLounge: true,
       childStandard: true,
+      tickets: {
+        select: {
+          usedAt: true,
+        },
+      },
     },
   });
 

@@ -1,5 +1,6 @@
 import { createCanvas, loadImage, registerFont } from "canvas";
 import path from "path";
+import { generateInvoice } from "./generateInvoice";
 
 // Register Geist font
 registerFont(path.join(process.cwd(), "public", "fonts", "Geist-Regular.ttf"), {
@@ -13,6 +14,8 @@ type Ticket = {
 };
 
 export async function generateInvoiceImage(order: any, tickets: Ticket[]) {
+  const invoice = generateInvoice(order);
+
   const width = 1200;
   const height = 1800;
   const canvas = createCanvas(width, height);
@@ -45,9 +48,9 @@ export async function generateInvoiceImage(order: any, tickets: Ticket[]) {
   // White text section
   ctx.fillStyle = "#f5f5f5";
   ctx.font = "28px Geist";
-  ctx.fillText(`Receipt No: ${order.id}`, 40, 220);
+  ctx.fillText(`Receipt No: ${invoice.receiptNo}`, 40, 220);
   ctx.fillText(
-    `Order Time: ${new Date(order.createdAt).toLocaleString("en-GB")}`,
+    `Order Time: ${new Date(invoice.orderTime).toLocaleString("en-GB")}`,
     40,
     270
   );
@@ -59,9 +62,9 @@ export async function generateInvoiceImage(order: any, tickets: Ticket[]) {
 
   ctx.font = "24px Geist";
   ctx.fillStyle = "#f5f5f5";
-  ctx.fillText(order.name ?? "", 40, 380);
-  ctx.fillText(order.email ?? "", 40, 420);
-  ctx.fillText(order.contactNo ?? "", 40, 460);
+  ctx.fillText(invoice.customer.name, 40, 380);
+  ctx.fillText(invoice.customer.email, 40, 420);
+  ctx.fillText(invoice.customer.contactNo, 40, 460);
 
   // Seller
   ctx.font = "32px Geist";
@@ -70,10 +73,10 @@ export async function generateInvoiceImage(order: any, tickets: Ticket[]) {
 
   ctx.font = "24px Geist";
   ctx.fillStyle = "#f5f5f5";
-  ctx.fillText("Taprobane Entertainment Oy", 650, 380);
-  ctx.fillText("Business ID: 3581857-4", 650, 420);
-  ctx.fillText("info@taprobane.fi", 650, 460);
-  ctx.fillText("www.taprobane.fi", 650, 500);
+  ctx.fillText(invoice.seller.name, 650, 380);
+  ctx.fillText(`Business ID: ${invoice.seller.businessId}`, 650, 420);
+  ctx.fillText(invoice.seller.email, 650, 460);
+  ctx.fillText(invoice.seller.website, 650, 500);
 
   // Event block
   ctx.fillStyle = "#1a1a1a";
@@ -85,23 +88,19 @@ export async function generateInvoiceImage(order: any, tickets: Ticket[]) {
 
   ctx.fillStyle = "#f5f5f5";
   ctx.font = "24px Geist";
-  ctx.fillText(order.event.title, 60, 600);
-  ctx.fillText(order.event.venue, 60, 640);
-  ctx.fillText("24th April 2026, 19:00", 60, 680);
-
-  // Group tickets by category + tier
-  const grouped: Record<string, { label: string; qty: number }> = {};
-  for (const t of tickets) {
-    const key = `${t.category}-${t.tier}`;
-    if (!grouped[key]) {
-      grouped[key] = {
-        label: `Ticket ${t.category} ${t.tier}`,
-        qty: 1,
-      };
-    } else {
-      grouped[key].qty += 1;
-    }
-  }
+  ctx.fillText(invoice.event.title, 60, 600);
+  ctx.fillText(invoice.event.venue, 60, 640);
+  ctx.fillText(
+    new Date(invoice.event.date).toLocaleString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    60,
+    680
+  );
 
   // Tickets table header
   let y = 780;
@@ -119,30 +118,17 @@ export async function generateInvoiceImage(order: any, tickets: Ticket[]) {
 
   y += 80;
 
-  const total = order.totalAmount / 100;
-  const netTotal = total / 1.135;
-  const vatTotal = total - netTotal;
-
-  const perTicket = total / tickets.length;
-  const perTicketNet = perTicket / 1.135;
-  const perTicketVat = perTicket - perTicketNet;
-
-  for (const key in grouped) {
-    const { label, qty } = grouped[key];
-    const rowTotal = perTicket * qty;
-    const rowNet = perTicketNet * qty;
-    const rowVat = perTicketVat * qty;
-
+  for (const row of invoice.rows) {
     ctx.fillStyle = "#1a1a1a";
     ctx.fillRect(40, y - 20, width - 80, 70);
 
     ctx.fillStyle = "#f5f5f5";
     ctx.font = "22px Geist";
-    ctx.fillText(label, 60, y + 20);
-    ctx.fillText(`${qty}`, 500, y + 20);
-    ctx.fillText(`${rowNet.toFixed(2)} €`, 650, y + 20);
-    ctx.fillText(`${rowVat.toFixed(2)} €`, 820, y + 20);
-    ctx.fillText(`${rowTotal.toFixed(2)} €`, 980, y + 20);
+    ctx.fillText(row.product, 60, y + 20);
+    ctx.fillText(`${row.quantity}`, 500, y + 20);
+    ctx.fillText(`${row.exclVat.toFixed(2)} €`, 650, y + 20);
+    ctx.fillText(`${row.vat.toFixed(2)} €`, 820, y + 20);
+    ctx.fillText(`${row.total.toFixed(2)} €`, 980, y + 20);
 
     y += 90;
   }
@@ -157,12 +143,27 @@ export async function generateInvoiceImage(order: any, tickets: Ticket[]) {
 
   ctx.font = "24px Geist";
   ctx.fillStyle = "#f5f5f5";
-  ctx.fillText(`Total excl. VAT: ${netTotal.toFixed(2)} €`, 40, y);
+
+  // Payment method
+  ctx.fillText(`Payment method: ${invoice.paymentMethod}`, 40, y);
   y += 40;
-  ctx.fillText(`VAT 13.5%: ${vatTotal.toFixed(2)} €`, 40, y);
-  y += 40;
+
   ctx.fillText(
-    `Service fee: ${(order.serviceFee / 100).toFixed(2)} €`,
+    `Total excl. VAT: ${invoice.summary.totalExclVat.toFixed(2)} €`,
+    40,
+    y
+  );
+  y += 40;
+
+  ctx.fillText(
+    `VAT 13.5%: ${invoice.summary.totalVat.toFixed(2)} €`,
+    40,
+    y
+  );
+  y += 40;
+
+  ctx.fillText(
+    `Service fee: ${invoice.summary.serviceFee.toFixed(2)} €`,
     40,
     y
   );
@@ -170,7 +171,11 @@ export async function generateInvoiceImage(order: any, tickets: Ticket[]) {
 
   ctx.fillStyle = "#d4af37";
   ctx.font = "32px Geist";
-  ctx.fillText(`Total payable: ${total.toFixed(2)} €`, 40, y);
+  ctx.fillText(
+    `Total payable: ${invoice.summary.totalPayable.toFixed(2)} €`,
+    40,
+    y
+  );
 
   return canvas.toBuffer("image/png");
 }
