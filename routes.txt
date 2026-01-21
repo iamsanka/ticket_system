@@ -1,3 +1,6 @@
 Success page → http://localhost:3000/api/send-ticket?orderId=cmkag0qvy0000b2mwgr30lys9 → QR + Email → Mark as sent.
 Scanner Page -> http://localhost:3000/admin/checkin
 admin page -> http://localhost:3000/admin
+
+npm install
+put the .env and .env.local files
