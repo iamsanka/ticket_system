@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import QrScanner from "qr-scanner";
+import { useRouter } from "next/navigation";
 
 export default function ScannerPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -10,12 +11,12 @@ export default function ScannerPage() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
+  const router = useRouter();
+
   async function validate(qrCode: string) {
     if (!scannerRef.current) return;
 
-    // 🔥 Stop scanning immediately to prevent double scans
     scannerRef.current.stop();
-
     setLoading(true);
     setResult(null);
 
@@ -34,11 +35,10 @@ export default function ScannerPage() {
 
     setLoading(false);
 
-    // ⏳ Cooldown before scanning again
     setTimeout(() => {
       setResult(null);
-      scannerRef.current?.start(); // 🔥 Restart scanner
-    }, 3000); // 3 seconds
+      scannerRef.current?.start();
+    }, 3000);
   }
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function ScannerPage() {
       {
         highlightScanRegion: true,
         highlightCodeOutline: true,
-      }
+      },
     );
 
     scanner.start();
@@ -65,6 +65,14 @@ export default function ScannerPage() {
 
   return (
     <main className="p-6 max-w-xl mx-auto">
+      {/* Back Button */}
+      <button
+        onClick={() => router.push("/admin")}
+        className="mb-4 px-4 py-2 bg-yellow-400 text-black font-semibold rounded hover:bg-yellow-300 transition"
+      >
+        ← Back to Admin
+      </button>
+
       <h1 className="text-3xl font-bold mb-6">QR Scanner</h1>
 
       <video

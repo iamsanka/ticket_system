@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
+import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -10,187 +10,173 @@ export async function POST(req: Request) {
 
     const {
       eventId,
+      name,
+      email,
+      contactNo,
       adultLounge = 0,
       adultStandard = 0,
       childLounge = 0,
       childStandard = 0,
-      name,
-      email,
-      contactNo = "",
-      paymentMethod = "stripe",
+      paymentMethod,
     } = body;
+
+    if (!eventId || !email || !name || !paymentMethod) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
 
     const event = await prisma.event.findUnique({
       where: { id: eventId },
     });
 
     if (!event) {
-      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Event not found" },
+        { status: 404 }
+      );
     }
 
-    // ─────────────────────────────────────────────
-    // Adult Lounge Limit Check (100 max)
-    // ─────────────────────────────────────────────
+    // 1. Calculate subtotal
+    const subtotal =
+      adultLounge * event.adultLoungePrice +
+      adultStandard * event.adultStandardPrice +
+      childLounge * event.childLoungePrice +
+      childStandard * event.childStandardPrice;
+
+    if (subtotal < 50) {
+      return NextResponse.json(
+        {
+          error:
+            "Minimum charge is €0.50. Please select at least one ticket.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // 1.5 Adult Lounge seat limit check (max 100)
     if (adultLounge > 0) {
-      const existingAdultLounge = await prisma.ticket.count({
+      const currentLoungeCount = await prisma.ticket.count({
         where: {
-          order: { eventId },
           category: "ADULT",
           tier: "LOUNGE",
         },
       });
 
-      if (existingAdultLounge + adultLounge > 100) {
+      if (currentLoungeCount + adultLounge > 100) {
         return NextResponse.json(
           {
-            error: "Adult Lounge tickets are sold out",
-            remaining: Math.max(0, 100 - existingAdultLounge),
+            error: `Only ${Math.max(
+              0,
+              100 - currentLoungeCount
+            )} Adult Lounge seats remaining.`,
           },
           { status: 400 }
         );
       }
     }
 
-    // ─────────────────────────────────────────────
-    // Base ticket total
-    // ─────────────────────────────────────────────
-    let totalAmount =
-      adultLounge * event.adultLoungePrice +
-      adultStandard * event.adultStandardPrice +
-      childLounge * event.childLoungePrice +
-      childStandard * event.childStandardPrice;
-
-    // ─────────────────────────────────────────────
-    // Generic service fee (Edenred, ePassi, etc.)
-    // ─────────────────────────────────────────────
+    // 2. Calculate service fee
     let serviceFee = 0;
 
-    // Edenred 5% fee
     if (paymentMethod === "edenred") {
-      serviceFee = Math.round(totalAmount * 0.05);
-      totalAmount += serviceFee;
+      serviceFee = Math.round(subtotal * 0.05); // 5%
     }
 
-    // ePassi fee (if added later)
     if (paymentMethod === "epassi") {
-      serviceFee = Math.round(totalAmount * 0.05);
-      totalAmount += serviceFee;
+      const totalTickets =
+        adultLounge +
+        adultStandard +
+        childLounge +
+        childStandard;
+
+      serviceFee = totalTickets * 500; // €5 per ticket
     }
 
-    // ─────────────────────────────────────────────
-    // Create Order
-    // ─────────────────────────────────────────────
-    const order = await prisma.order.create({
-      data: {
-        eventId,
-        adultLounge,
-        adultStandard,
-        childLounge,
-        childStandard,
-        totalAmount,
-        serviceFee, // ⭐ stored here
-        email,
-        name,
-        contactNo,
-        paymentMethod,
-      },
-    });
+    // 3. Final total
+    const totalAmount = subtotal + serviceFee;
 
     // ─────────────────────────────────────────────
-    // Build ticket categories & tiers
+    // Manual payment flow (Edenred / ePassi)
     // ─────────────────────────────────────────────
-    const categories = [
-      ...Array(adultLounge).fill("ADULT"),
-      ...Array(adultStandard).fill("ADULT"),
-      ...Array(childLounge).fill("CHILD"),
-      ...Array(childStandard).fill("CHILD"),
-    ];
-
-    const tiers = [
-      ...Array(adultLounge).fill("LOUNGE"),
-      ...Array(adultStandard).fill("STANDARD"),
-      ...Array(childLounge).fill("LOUNGE"),
-      ...Array(childStandard).fill("STANDARD"),
-    ];
-
-    const totalQuantity = categories.length;
-
-    // ─────────────────────────────────────────────
-    // Generate ticket codes
-    // ─────────────────────────────────────────────
-    const prefix = "00520";
-
-    const lastTicket = await prisma.ticket.findFirst({
-      orderBy: { ticketCode: "desc" },
-    });
-
-    let startNumber = 1;
-
-    if (lastTicket?.ticketCode) {
-      const lastIncrement = parseInt(lastTicket.ticketCode.slice(-4));
-      startNumber = lastIncrement + 1;
-    }
-
-    const ticketsToCreate = [];
-
-    for (let i = 0; i < totalQuantity; i++) {
-      const paddedIncrement = String(startNumber + i).padStart(4, "0");
-      const ticketCode = `SSAN-${prefix}${paddedIncrement}`;
-
-      ticketsToCreate.push({
-        orderId: order.id,
-        category: categories[i],
-        tier: tiers[i],
-        ticketCode,
-        qrCode: `${order.id}-${categories[i]}-${tiers[i]}-${ticketCode}`,
-      });
-    }
-
-    await prisma.ticket.createMany({ data: ticketsToCreate });
-
-    // ─────────────────────────────────────────────
-    // Edenred Redirect
-    // ─────────────────────────────────────────────
-    if (paymentMethod === "edenred") {
-      return NextResponse.json({
-        redirectUrl:
-          "https://myedenred.fi/affiliate-payment/YOUR-EDENRED-LINK-HERE",
-        message: "Please complete your payment using Edenred Pay.",
-        orderId: order.id,
-      });
-    }
-
-    // ─────────────────────────────────────────────
-    // Stripe Checkout Session (default)
-    // ─────────────────────────────────────────────
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "payment",
-      customer_email: email,
-      line_items: [
-        {
-          price_data: {
-            currency: "eur",
-            product_data: {
-              name: event.title,
-            },
-            unit_amount: totalAmount,
-          },
-          quantity: 1,
+    if (paymentMethod === "edenred" || paymentMethod === "epassi") {
+      const order = await prisma.order.create({
+        data: {
+          eventId,
+          name,
+          email,
+          contactNo,
+          adultLounge,
+          adultStandard,
+          childLounge,
+          childStandard,
+          serviceFee,
+          totalAmount,
+          paymentMethod,
+          status: "AWAITING_VERIFICATION",
+          paid: false,
         },
-      ],
-      success_url: `${process.env.NEXT_PUBLIC_URL}/success?orderId=${order.id}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_URL}/cancel`,
-      metadata: {
-        orderId: order.id,
+      });
+
+      return NextResponse.json({ orderId: order.id });
+    }
+
+    // ─────────────────────────────────────────────
+    // Stripe embedded flow (card/Klarna)
+    // ─────────────────────────────────────────────
+
+    // Prevent duplicate orders: reuse existing pending unpaid Stripe order
+    const existing = await prisma.order.findFirst({
+      where: {
+        email,
+        eventId,
+        paid: false,
+        status: "pending",
+        paymentMethod: "stripe",
       },
     });
 
-    return NextResponse.json({ sessionUrl: session.url });
-  } catch (error) {
+    let orderId: string;
+
+    if (existing) {
+      orderId = existing.id;
+    } else {
+      const order = await prisma.order.create({
+        data: {
+          eventId,
+          name,
+          email,
+          contactNo,
+          adultLounge,
+          adultStandard,
+          childLounge,
+          childStandard,
+          serviceFee: 0,
+          totalAmount: subtotal,
+          paymentMethod: "stripe",
+          status: "pending",
+          paid: false,
+        },
+      });
+      orderId = order.id;
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: subtotal,
+      currency: "eur",
+      metadata: { orderId },
+      receipt_email: email,
+    });
+
+    return NextResponse.json({
+      clientSecret: paymentIntent.client_secret,
+      orderId,
+    });
+  } catch (error: any) {
     console.error("Checkout error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error.message || "Checkout failed" },
       { status: 500 }
     );
   }

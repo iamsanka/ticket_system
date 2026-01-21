@@ -1,12 +1,12 @@
-// FILE: app/api/validate-ticket/route.ts
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   const { qrCode, orderId } = await req.json();
 
-  // Manual check-in
+  // ─────────────────────────────────────────────
+  // 1. MANUAL CHECK-IN BY ORDER ID
+  // ─────────────────────────────────────────────
   if (orderId) {
     await prisma.ticket.updateMany({
       where: { orderId },
@@ -16,6 +16,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ valid: true, manual: true });
   }
 
+  // ─────────────────────────────────────────────
+  // 2. QR VALIDATION
+  // ─────────────────────────────────────────────
   if (!qrCode) {
     return NextResponse.json(
       { valid: false, reason: "Missing QR code" },
@@ -23,20 +26,22 @@ export async function POST(req: Request) {
     );
   }
 
-  // 🔥 FIX: Normalize QR input (scanner sometimes sends JSON)
-  let raw = qrCode;
+  // Scanner may send:
+  //  - raw string: "<orderId>-ADULT-LOUNGE-SSAN-005200001"
+  //  - JSON: {"qrCode": "<orderId>-ADULT-LOUNGE-SSAN-005200001"}
+  let raw = qrCode as string;
 
   try {
     const parsed = JSON.parse(qrCode);
-    if (parsed.qrCode) {
+    if (parsed && typeof parsed.qrCode === "string") {
       raw = parsed.qrCode;
     }
   } catch {
     // Not JSON — use as-is
   }
 
-  // 🔥 FIX: Extract ticketCode safely
   const parts = raw.trim().split("-");
+  // Ticket code is always the last two segments: "SSAN-0052xxxx"
   const ticketCode = parts.slice(-2).join("-").trim();
 
   console.log("QR RAW:", qrCode);
@@ -44,7 +49,13 @@ export async function POST(req: Request) {
   console.log("PARTS:", parts);
   console.log("EXTRACTED ticketCode:", ticketCode);
 
-  // Prisma lookup
+  if (!ticketCode) {
+    return NextResponse.json(
+      { valid: false, reason: "Invalid QR format" },
+      { status: 400 }
+    );
+  }
+
   const ticket = await prisma.ticket.findFirst({
     where: { ticketCode },
     include: { order: { include: { event: true } } },

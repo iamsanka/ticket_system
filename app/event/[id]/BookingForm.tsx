@@ -1,37 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import EdenredQR from "@/app/component/EdenredQR";
+import { useRouter } from "next/navigation";
+import { TicketCounter } from "@/app/component/TicketCounter";
 
 export default function BookingForm({ eventId }: { eventId: string }) {
   const [loading, setLoading] = useState(false);
-  const [showEdenredQR, setShowEdenredQR] = useState(false);
   const [availability, setAvailability] = useState<{
     adultLoungeRemaining: number;
   } | null>(null);
 
-  // ⭐ REAL EDENRED LINK
-  const EDENRED_LINK =
-    "https://myedenred.fi/affiliate-payment/d0cd66d3-ee1f-4535-b8ed-a8dffa5320e7";
-
-  // ⭐ Detect mobile device
-  function isMobileDevice() {
-    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  }
-
-  // ⭐ Try to open Edenred app, fallback if not installed
-  function openEdenredApp(link: string) {
-    const start = Date.now();
-    window.location.href = link;
-
-    setTimeout(() => {
-      if (Date.now() - start < 1500) {
-        alert(
-          "It looks like the Edenred app is not installed. Please install the Edenred app and try again.",
-        );
-      }
-    }, 1200);
-  }
+  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/ticket-availability")
@@ -39,22 +18,22 @@ export default function BookingForm({ eventId }: { eventId: string }) {
       .then((data) => setAvailability(data));
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handlePayment(method: "stripe" | "edenred" | "epassi") {
     setLoading(true);
 
-    const form = new FormData(e.target as HTMLFormElement);
+    const form = document.getElementById("booking-form") as HTMLFormElement;
+    const formData = new FormData(form);
 
     const payload = {
       eventId,
-      name: form.get("name"),
-      email: form.get("email"),
-      contactNo: form.get("contact"),
-      adultLounge: Number(form.get("adultLounge")),
-      adultStandard: Number(form.get("adultStandard")),
-      childLounge: Number(form.get("childLounge")),
-      childStandard: Number(form.get("childStandard")),
-      paymentMethod: form.get("paymentMethod"),
+      name: formData.get("name"),
+      email: formData.get("email"),
+      contactNo: formData.get("contact"),
+      adultLounge: Number(formData.get("adultLounge")),
+      adultStandard: Number(formData.get("adultStandard")),
+      childLounge: Number(formData.get("childLounge")),
+      childStandard: Number(formData.get("childStandard")),
+      paymentMethod: method,
     };
 
     const res = await fetch("/api/checkout", {
@@ -65,175 +44,185 @@ export default function BookingForm({ eventId }: { eventId: string }) {
 
     const data = await res.json();
 
-    // ⭐ EDENRED FLOW
-    if (data.redirectUrl && payload.paymentMethod === "edenred") {
-      if (isMobileDevice()) {
-        openEdenredApp(EDENRED_LINK);
-      } else {
-        setShowEdenredQR(true);
-      }
+    if (method === "stripe" && data.clientSecret && data.orderId) {
+      router.push(`/checkout?orderId=${data.orderId}`);
       return;
     }
 
-    // ⭐ STRIPE FLOW
-    if (!data.sessionUrl) {
-      alert(data.error || "Checkout failed");
-      setLoading(false);
+    if ((method === "edenred" || method === "epassi") && data.orderId) {
+      router.push(`/edenred-epassi-payment?orderId=${data.orderId}`);
       return;
     }
 
-    window.location.href = data.sessionUrl;
+    alert(data.error || "Checkout failed");
+    setLoading(false);
   }
 
   return (
-    <>
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto">
-        {/* Name */}
-        <div>
-          <label className="block text-left font-medium mb-1">Name</label>
-          <input
-            name="name"
-            required
-            className="border p-2 w-full text-black"
-          />
-        </div>
-
-        {/* Email */}
-        <div>
-          <label className="block text-left font-medium mb-1">Email</label>
-          <input
-            name="email"
-            type="email"
-            required
-            className="border p-2 w-full text-black"
-          />
-        </div>
-
-        {/* Contact */}
-        <div>
-          <label className="block text-left font-medium mb-1">
-            Contact Number
-          </label>
-          <input
-            name="contact"
-            required
-            className="border p-2 w-full text-black"
-          />
-        </div>
-
-        {/* Adults Section */}
-        <div className="border p-4 rounded-md">
-          <h3 className="font-semibold text-lg mb-3">Adults</h3>
-
-          {/* Adult Lounge */}
-          <div className="mb-4">
-            <label className="block text-left font-medium mb-1">
-              Taprobane Lounge
-            </label>
-
-            {availability?.adultLoungeRemaining === 0 && (
-              <p className="text-red-600 text-sm font-semibold">Sold Out</p>
-            )}
-
-            <input
-              name="adultLounge"
-              type="number"
-              min={0}
-              max={availability?.adultLoungeRemaining ?? 10}
-              defaultValue={0}
-              disabled={availability?.adultLoungeRemaining === 0}
-              className={`border p-2 w-full text-black ${
-                availability?.adultLoungeRemaining === 0
-                  ? "bg-gray-200 cursor-not-allowed"
-                  : ""
-              }`}
-            />
-          </div>
-
-          {/* Adult Standard */}
-          <div>
-            <label className="block text-left font-medium mb-1">Standard</label>
-            <input
-              name="adultStandard"
-              type="number"
-              min={0}
-              defaultValue={0}
-              className="border p-2 w-full text-black"
-            />
-          </div>
-        </div>
-
-        {/* Kids Section */}
-        <div className="border p-4 rounded-md">
-          <h3 className="font-semibold text-lg mb-3">Kids</h3>
-
-          {/* Child Lounge */}
-          <div className="mb-4">
-            <label className="block text-left font-medium mb-1">
-              Taprobane Lounge
-            </label>
-            <input
-              name="childLounge"
-              type="number"
-              min={0}
-              defaultValue={0}
-              className="border p-2 w-full text-black"
-            />
-          </div>
-
-          {/* Child Standard */}
-          <div>
-            <label className="block text-left font-medium mb-1">Standard</label>
-            <input
-              name="childStandard"
-              type="number"
-              min={0}
-              defaultValue={0}
-              className="border p-2 w-full text-black"
-            />
-          </div>
-        </div>
-
-        {/* Payment Method */}
-        <div>
-          <label className="block text-left font-medium mb-1">
-            Payment Method
-          </label>
-          <select
-            name="paymentMethod"
-            required
-            className="border p-2 w-full text-black"
-          >
-            <option value="stripe">Card (Stripe)</option>
-            <option value="edenred">Edenred Pay</option>
-          </select>
-
-          {/* ⭐ Edenred Warning */}
-          {true && (
-            <p className="text-sm text-yellow-700 bg-yellow-100 p-2 rounded mt-2">
-              Edenred Pay requires the Edenred mobile app. If you are on a
-              computer, a QR code will appear so you can continue on your phone.
-            </p>
-          )}
-        </div>
-
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white px-4 py-2 rounded w-full"
-        >
-          {loading ? "Processing..." : "Buy Tickets"}
-        </button>
-      </form>
-
-      {/* ⭐ QR Popup */}
-      {showEdenredQR && (
-        <EdenredQR
-          link={EDENRED_LINK}
-          onClose={() => setShowEdenredQR(false)}
+    <form id="booking-form" className="space-y-6 max-w-md mx-auto px-4">
+      {/* Name */}
+      <div>
+        <label className="block text-left font-medium mb-1">Name</label>
+        <input
+          name="name"
+          required
+          className="border p-2 w-full text-black rounded"
         />
-      )}
-    </>
+      </div>
+
+      {/* Email */}
+      <div>
+        <label className="block text-left font-medium mb-1">Email</label>
+        <input
+          name="email"
+          type="email"
+          required
+          className="border p-2 w-full text-black rounded"
+        />
+      </div>
+
+      {/* Contact */}
+      <div>
+        <label className="block text-left font-medium mb-1">
+          Contact Number
+        </label>
+        <input
+          name="contact"
+          required
+          className="border p-2 w-full text-black rounded"
+        />
+      </div>
+
+      {/* Adults */}
+      <div className="border p-4 rounded-md">
+        <h3 className="font-semibold text-lg mb-3">Adults</h3>
+        <TicketCounter
+          label="Taprobane Lounge"
+          name="adultLounge"
+          max={availability?.adultLoungeRemaining ?? 10}
+          disabled={availability?.adultLoungeRemaining === 0}
+        />
+        {availability?.adultLoungeRemaining === 0 && (
+          <p className="text-sm text-red-600 mt-1">Adult Lounge is sold out.</p>
+        )}
+        <TicketCounter label="Standard" name="adultStandard" />
+      </div>
+
+      {/* Kids */}
+      <div className="border p-4 rounded-md">
+        <h3 className="font-semibold text-lg mb-3">Kids</h3>
+        <TicketCounter label="Taprobane Lounge" name="childLounge" />
+        <TicketCounter label="Standard" name="childStandard" />
+      </div>
+
+      {/* Payment Method */}
+      <div>
+        <label className="block text-left font-medium mb-2">
+          Payment Method
+        </label>
+        <div className="space-y-3">
+          {/* Card / Klarna */}
+          <button
+            type="button"
+            onClick={() => handlePayment("stripe")}
+            disabled={loading}
+            className={`w-full border p-3 rounded flex items-center justify-center gap-3 transition-all ${
+              loading ? "opacity-50 cursor-wait" : "hover:bg-blue-50"
+            }`}
+          >
+            <svg
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="2" y="5" width="20" height="14" rx="2" />
+              <line x1="2" y1="10" x2="22" y2="10" />
+            </svg>
+            <span className="font-semibold">Card / MobilePay / Klarna</span>
+          </button>
+
+          {/* Edenred */}
+          <button
+            type="button"
+            onClick={() => handlePayment("edenred")}
+            disabled={loading}
+            className={`w-full border p-3 rounded flex items-center justify-center transition-all ${
+              loading ? "opacity-50 cursor-wait" : "hover:bg-red-50"
+            }`}
+          >
+            <svg
+              width="191"
+              height="48"
+              viewBox="0 0 191 48"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-40"
+            >
+              <rect x="1" y="1" width="189" height="46" rx="23" fill="white" />
+              <text
+                x="50%"
+                y="50%"
+                dominantBaseline="middle"
+                textAnchor="middle"
+                fill="black"
+                fontSize="20"
+                fontFamily="Arial"
+                fontWeight="bold"
+              >
+                Edenred
+              </text>
+              <rect
+                x="1"
+                y="1"
+                width="189"
+                height="46"
+                rx="23"
+                stroke="black"
+                strokeWidth="2"
+              />
+            </svg>
+          </button>
+
+          {/* ePassi */}
+          <button
+            type="button"
+            onClick={() => handlePayment("epassi")}
+            disabled={loading}
+            className={`w-full border p-3 rounded flex items-center justify-center transition-all ${
+              loading ? "opacity-50 cursor-wait" : "hover:bg-purple-50"
+            }`}
+          >
+            <svg
+              width="160"
+              height="40"
+              viewBox="0 0 200 60"
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-36"
+            >
+              <rect width="200" height="60" rx="12" fill="#5A2D82" />
+              <text
+                x="50%"
+                y="50%"
+                dominantBaseline="middle"
+                textAnchor="middle"
+                fill="white"
+                fontSize="26"
+                fontFamily="Arial"
+                fontWeight="bold"
+              >
+                ePassi
+              </text>
+            </svg>
+          </button>
+        </div>
+
+        <p className="text-sm text-yellow-700 bg-yellow-100 p-2 rounded mt-3">
+          Edenred and ePassi require their mobile apps. If you are on a
+          computer, a QR code will appear so you can continue on your phone.
+        </p>
+      </div>
+    </form>
   );
 }

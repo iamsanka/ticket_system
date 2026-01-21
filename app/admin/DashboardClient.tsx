@@ -9,19 +9,26 @@ type Event = {
   date: string;
 };
 
+type TicketSummary = {
+  usedAt: string | null;
+};
+
 type Order = {
   id: string;
-  name: string;
+  name: string | null;
   email: string;
-  adultQuantity: number;
-  childQuantity: number;
-  usedAt: string | null;
+  contactNo: string | null;
+  adultLounge: number;
+  adultStandard: number;
+  childLounge: number;
+  childStandard: number;
+  tickets: TicketSummary[];
 };
 
 export default function DashboardClient({ events }: { events: Event[] }) {
   const router = useRouter();
   const [selectedEvent, setSelectedEvent] = useState<string>(
-    events[0]?.id ?? ""
+    events[0]?.id ?? "",
   );
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -39,7 +46,15 @@ export default function DashboardClient({ events }: { events: Event[] }) {
     loadOrders();
   }, [selectedEvent]);
 
-  const checkInCount = orders.filter((o) => o.usedAt !== null).length;
+  const totalAttendees = orders.reduce((sum, o) => {
+    return (
+      sum + o.adultLounge + o.adultStandard + o.childLounge + o.childStandard
+    );
+  }, 0);
+
+  const checkedInTickets = orders.reduce((sum, o) => {
+    return sum + o.tickets.filter((t) => t.usedAt !== null).length;
+  }, 0);
 
   async function resendTicket(orderId: string) {
     await fetch(`/api/send-ticket?orderId=${orderId}`);
@@ -76,12 +91,15 @@ export default function DashboardClient({ events }: { events: Event[] }) {
       </div>
 
       {/* Live Stats */}
-      <div className="mb-6">
+      <div className="mb-6 space-y-1">
         <p className="text-xl">
-          <strong>Total Attendees:</strong> {orders.length}
+          <strong>Total Orders:</strong> {orders.length}
+        </p>
+        <p className="text-xl">
+          <strong>Total Attendees (tickets):</strong> {totalAttendees}
         </p>
         <p className="text-xl text-green-400">
-          <strong>Checked In:</strong> {checkInCount}
+          <strong>Tickets Checked In:</strong> {checkedInTickets}
         </p>
       </div>
 
@@ -103,50 +121,70 @@ export default function DashboardClient({ events }: { events: Event[] }) {
       </div>
 
       {/* Attendee List */}
-      <h2 className="text-2xl font-bold mb-4">Attendees</h2>
+      <h2 className="text-2xl font-bold mb-4">Orders</h2>
 
       {loading ? (
         <p>Loading attendees…</p>
       ) : (
         <div className="space-y-4">
-          {orders.map((order) => (
-            <div
-              key={order.id}
-              className="border border-gray-700 p-4 rounded flex justify-between"
-            >
-              <div>
-                <p>
-                  <strong>{order.name}</strong>
-                </p>
-                <p>{order.email}</p>
-                <p>People: {order.adultQuantity + order.childQuantity}</p>
-                <p>
-                  Status:{" "}
-                  {order.usedAt ? (
-                    <span className="text-green-400">Checked In</span>
-                  ) : (
-                    <span className="text-yellow-400">Not Checked In</span>
-                  )}
-                </p>
-              </div>
+          {orders.map((order) => {
+            const peopleCount =
+              order.adultLounge +
+              order.adultStandard +
+              order.childLounge +
+              order.childStandard;
 
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => resendTicket(order.id)}
-                  className="bg-purple-600 px-3 py-1 rounded"
-                >
-                  Resend Ticket
-                </button>
+            const ticketsCheckedIn = order.tickets.filter(
+              (t) => t.usedAt !== null,
+            ).length;
 
-                <button
-                  onClick={() => manualCheckIn(order.id)}
-                  className="bg-green-600 px-3 py-1 rounded"
-                >
-                  Manual Check‑In
-                </button>
+            const isFullyCheckedIn =
+              peopleCount > 0 && ticketsCheckedIn >= peopleCount;
+
+            return (
+              <div
+                key={order.id}
+                className="border border-gray-700 p-4 rounded flex justify-between"
+              >
+                <div>
+                  <p>
+                    <strong>{order.name || "Guest"}</strong>
+                  </p>
+                  <p>{order.email}</p>
+                  {order.contactNo && <p>{order.contactNo}</p>}
+                  <p>People: {peopleCount}</p>
+                  <p>
+                    Status:{" "}
+                    {isFullyCheckedIn ? (
+                      <span className="text-green-400">Fully Checked In</span>
+                    ) : ticketsCheckedIn > 0 ? (
+                      <span className="text-yellow-400">
+                        Partially Checked In ({ticketsCheckedIn}/{peopleCount})
+                      </span>
+                    ) : (
+                      <span className="text-red-400">Not Checked In</span>
+                    )}
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => resendTicket(order.id)}
+                    className="bg-purple-600 px-3 py-1 rounded"
+                  >
+                    Resend Ticket
+                  </button>
+
+                  <button
+                    onClick={() => manualCheckIn(order.id)}
+                    className="bg-green-600 px-3 py-1 rounded"
+                  >
+                    Manual Check‑In
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </main>

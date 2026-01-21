@@ -99,7 +99,7 @@ model Ticket {
   tier      TicketTier
 
   // Human-readable ticket code
-  ticketCode String?
+  ticketCode String? @unique
 
   // QR code payload
   qrCode    String

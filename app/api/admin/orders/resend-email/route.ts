@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import {prisma} from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { generateQr } from "@/lib/generateQr";
 import { generateBrandedTicket } from "@/lib/generateTicketImage";
 import { sendTicketEmail } from "@/lib/sendTicketEmails";
@@ -8,6 +8,14 @@ export async function POST(req: Request) {
   try {
     const { orderId } = await req.json();
 
+    if (!orderId) {
+      return NextResponse.json(
+        { error: "orderId is required" },
+        { status: 400 }
+      );
+    }
+
+    // Load order with event + tickets
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -17,10 +25,22 @@ export async function POST(req: Request) {
     });
 
     if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Order not found" },
+        { status: 404 }
+      );
     }
 
-    // 🔥 EXACT SAME LOGIC AS PAYMENT EMAIL
+    if (!order.tickets || order.tickets.length === 0) {
+      return NextResponse.json(
+        { error: "No tickets exist for this order" },
+        { status: 400 }
+      );
+    }
+
+    // ----------------------------------------------------
+    // Generate ticket images (same logic as send-ticket)
+    // ----------------------------------------------------
     const ticketImages: {
       category: string;
       tier: string;
@@ -29,14 +49,16 @@ export async function POST(req: Request) {
     }[] = [];
 
     for (const ticket of order.tickets) {
+      // Generate QR
       const qrBuffer = await generateQr(ticket.qrCode);
       const qrBase64 = qrBuffer.toString("base64");
 
+      // Generate branded ticket PNG
       const ticketImage = await generateBrandedTicket({
         qrPng: qrBase64,
         event: order.event.title,
         name: order.name ?? "Guest",
-        date: new Date(order.event.date).toLocaleDateString(),
+        date: order.event.date.toISOString().split("T")[0],
         venue: order.event.venue,
         category: ticket.category,
         tier: ticket.tier,
@@ -51,16 +73,29 @@ export async function POST(req: Request) {
       });
     }
 
-    // Send email with branded ticket images
+    // ----------------------------------------------------
+    // Send email with attachments
+    // ----------------------------------------------------
     await sendTicketEmail({
       to: order.email,
       tickets: ticketImages,
       order,
     });
 
+    // ----------------------------------------------------
+    // Mark as sent
+    // ----------------------------------------------------
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { ticketSent: true },
+    });
+
     return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("Resend email error:", err);
-    return NextResponse.json({ error: "Failed to resend email" }, { status: 500 });
+  } catch (error) {
+    console.error("Resend email error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
