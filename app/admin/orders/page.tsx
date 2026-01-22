@@ -14,9 +14,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // ------------------------------------
-  // SUMMARY CALCULATOR
-  // ------------------------------------
+  // Summary calculation
   function getSummary() {
     const summary = {
       adultLounge: { paid: 0, unpaid: 0 },
@@ -51,9 +49,7 @@ export default function AdminOrdersPage() {
 
   const summary = getSummary();
 
-  // ------------------------------------
-  // SEARCH
-  // ------------------------------------
+  // Search orders
   async function handleSearch(e?: React.FormEvent) {
     if (e) e.preventDefault();
     setLoading(true);
@@ -69,9 +65,7 @@ export default function AdminOrdersPage() {
     setLoading(false);
   }
 
-  // ------------------------------------
-  // MARK AS PAID
-  // ------------------------------------
+  // Mark as paid
   async function markAsPaid(orderId: string) {
     try {
       const res = await fetch("/api/admin/orders/mark-paid", {
@@ -103,9 +97,7 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // ------------------------------------
-  // RESEND EMAIL
-  // ------------------------------------
+  // Resend email
   async function resendEmail(orderId: string) {
     const res = await fetch("/api/admin/orders/resend-email", {
       method: "POST",
@@ -132,9 +124,7 @@ export default function AdminOrdersPage() {
 
       <h1 className="text-2xl font-bold mb-6">Order Management</h1>
 
-      {/* ------------------------------------
-          SUMMARY TABLE
-      ------------------------------------ */}
+      {/* SUMMARY TABLE */}
       <div className="mb-6 border p-4 rounded bg-white text-black">
         <h2 className="text-lg font-semibold mb-3">Ticket Summary</h2>
 
@@ -171,9 +161,7 @@ export default function AdminOrdersPage() {
         </table>
       </div>
 
-      {/* ------------------------------------
-          SEARCH FORM
-      ------------------------------------ */}
+      {/* SEARCH FORM */}
       <form onSubmit={handleSearch} className="space-y-4 mb-8">
         <h2 className="text-lg font-semibold mb-2">Search Orders</h2>
 
@@ -220,9 +208,7 @@ export default function AdminOrdersPage() {
         </button>
       </form>
 
-      {/* ------------------------------------
-          NOTE FILTER
-      ------------------------------------ */}
+      {/* NOTE FILTER */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold mb-2">Edenred Receipt Note</h2>
         <input
@@ -234,9 +220,7 @@ export default function AdminOrdersPage() {
         />
       </div>
 
-      {/* ------------------------------------
-          RESULTS
-      ------------------------------------ */}
+      {/* RESULTS */}
       <h2 className="text-lg font-semibold mb-2">Results</h2>
 
       {orders.length === 0 ? (

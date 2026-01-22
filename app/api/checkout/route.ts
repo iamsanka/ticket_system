@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1.5 Adult Lounge seat limit check (max 100)
+    //Adult Lounge seat limit check (max 100)
     if (adultLounge > 0) {
       const currentLoungeCount = await prisma.ticket.count({
         where: {
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2. Calculate service fee
+    // Calculate service fee
     let serviceFee = 0;
 
     if (paymentMethod === "edenred") {
@@ -94,12 +94,10 @@ export async function POST(req: Request) {
       serviceFee = totalTickets * 500; // €5 per ticket
     }
 
-    // 3. Final total
+    // Final total
     const totalAmount = subtotal + serviceFee;
 
-    // ─────────────────────────────────────────────
     // Manual payment flow (Edenred / ePassi)
-    // ─────────────────────────────────────────────
     if (paymentMethod === "edenred" || paymentMethod === "epassi") {
       const order = await prisma.order.create({
         data: {
@@ -122,9 +120,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ orderId: order.id });
     }
 
-    // ─────────────────────────────────────────────
     // Stripe embedded flow (card/Klarna)
-    // ─────────────────────────────────────────────
 
     // Prevent duplicate orders: reuse existing pending unpaid Stripe order
     const existing = await prisma.order.findFirst({

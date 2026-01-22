@@ -38,9 +38,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // ----------------------------------------------------
     // Generate ticket images (same logic as send-ticket)
-    // ----------------------------------------------------
     const ticketImages: {
       category: string;
       tier: string;
@@ -73,18 +71,14 @@ export async function POST(req: Request) {
       });
     }
 
-    // ----------------------------------------------------
     // Send email with attachments
-    // ----------------------------------------------------
     await sendTicketEmail({
       to: order.email,
       tickets: ticketImages,
       order,
     });
 
-    // ----------------------------------------------------
     // Mark as sent
-    // ----------------------------------------------------
     await prisma.order.update({
       where: { id: orderId },
       data: { ticketSent: true },

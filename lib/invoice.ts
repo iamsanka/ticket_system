@@ -1,5 +1,3 @@
-// lib/invoice.ts
-
 const VAT_RATE = 0.135;
 
 type TicketForInvoice = {

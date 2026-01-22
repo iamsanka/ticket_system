@@ -148,30 +148,22 @@ function POST(req) {
                     _i++;
                     return [3 /*break*/, 7];
                 case 11: 
-                // ----------------------------------------------------
                 // 3. Send ticket email
-                // ----------------------------------------------------
                 return [4 /*yield*/, sendTicketEmails_1.sendTicketEmail({
                         to: order_1.email,
                         tickets: ticketImages,
                         order: order_1
                     })];
                 case 12:
-                    // ----------------------------------------------------
                     // 3. Send ticket email
-                    // ----------------------------------------------------
                     _g.sent();
-                    // ----------------------------------------------------
                     // 4. Mark as sent
-                    // ----------------------------------------------------
                     return [4 /*yield*/, prisma_1.prisma.order.update({
                             where: { id: orderId },
                             data: { ticketSent: true }
                         })];
                 case 13:
-                    // ----------------------------------------------------
                     // 4. Mark as sent
-                    // ----------------------------------------------------
                     _g.sent();
                     return [2 /*return*/, server_1.NextResponse.json({
                             ok: true,

@@ -11,7 +11,7 @@ export default function SuccessPage() {
   const orderId = searchParams.get("orderId");
 
   const [status, setStatus] = useState<"loading" | "success" | "error">(
-    "loading"
+    "loading",
   );
   const [order, setOrder] = useState<any>(null);
 
@@ -47,9 +47,7 @@ export default function SuccessPage() {
     return () => clearInterval(interval);
   }, [orderId]);
 
-  // ─────────────────────────────────────────────
   // INVALID REQUEST
-  // ─────────────────────────────────────────────
   if (!orderId) {
     return (
       <main className="p-10 max-w-2xl mx-auto text-black">
@@ -59,9 +57,7 @@ export default function SuccessPage() {
     );
   }
 
-  // ─────────────────────────────────────────────
   // LOADING STATE (waiting for webhook)
-  // ─────────────────────────────────────────────
   if (status === "loading" || !order) {
     return (
       <main className="p-10 max-w-2xl mx-auto text-black">
@@ -71,9 +67,7 @@ export default function SuccessPage() {
     );
   }
 
-  // ─────────────────────────────────────────────
   // ERROR STATE
-  // ─────────────────────────────────────────────
   if (status === "error") {
     return (
       <main className="p-10 max-w-2xl mx-auto text-black">
@@ -90,9 +84,7 @@ export default function SuccessPage() {
     );
   }
 
-  // ─────────────────────────────────────────────
   // SUCCESS STATE (webhook confirmed payment)
-  // ─────────────────────────────────────────────
   return (
     <main className="p-10 max-w-2xl mx-auto text-black">
       <h1 className="text-3xl font-bold mb-4">Payment Successful</h1>
@@ -136,9 +128,7 @@ export default function SuccessPage() {
         </p>
       </div>
 
-      {/* ───────────────────────────────────────────── */}
       {/* TICKET CODES SECTION */}
-      {/* ───────────────────────────────────────────── */}
       {order.tickets && order.tickets.length > 0 && (
         <div className="border p-4 rounded bg-gray-100 space-y-2 mt-6">
           <h2 className="text-xl font-semibold mb-2">Your Tickets</h2>

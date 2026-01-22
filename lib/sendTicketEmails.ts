@@ -1,5 +1,3 @@
-// FILE: lib/sendTicketEmails.ts
-
 import nodemailer from "nodemailer";
 import { generateInvoiceImage } from "./generateInvoiceImage";
 import { invoiceImageToPdf } from "./invoiceImageToPdf";

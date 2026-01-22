@@ -8,9 +8,7 @@ export default function CheckinPage() {
   const [allTickets, setAllTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // ------------------------------------
   // LOAD ALL TICKETS ON PAGE LOAD
-  // ------------------------------------
   useEffect(() => {
     async function loadAll() {
       const res = await fetch("/api/admin/checkin/search", {
@@ -26,9 +24,7 @@ export default function CheckinPage() {
     loadAll();
   }, []);
 
-  // ------------------------------------
   // SUMMARY CALCULATOR
-  // ------------------------------------
   function getSummary() {
     const summary = {
       adultLounge: { used: 0, unused: 0 },
@@ -61,9 +57,7 @@ export default function CheckinPage() {
 
   const summary = getSummary();
 
-  // ------------------------------------
   // SEARCH TICKET BY CODE
-  // ------------------------------------
   async function handleSearch(e?: React.FormEvent) {
     if (e) e.preventDefault();
     setLoading(true);
@@ -80,9 +74,7 @@ export default function CheckinPage() {
     setLoading(false);
   }
 
-  // ------------------------------------
   // CHECK IN TICKET
-  // ------------------------------------
   async function handleCheckin() {
     if (!ticket) return;
 

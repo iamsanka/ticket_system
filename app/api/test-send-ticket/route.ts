@@ -1,5 +1,3 @@
-// app/api/test-send-ticket/route.ts
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateQr } from "@/lib/generateQr";
@@ -10,7 +8,7 @@ export async function GET() {
   // Hardcoded order ID for testing
   const orderId = "cmkodwzd90003b2bkjp5xt2sx";
 
-  // 1. Load order with event + tickets
+  // Load order with event + tickets
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: { event: true, tickets: true },
@@ -20,7 +18,7 @@ export async function GET() {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
-  // 2. Auto-create missing tickets based on quantities
+  // Auto-create missing tickets based on quantities
   if (!order.tickets || order.tickets.length === 0) {
     const ticketsToCreate: any[] = [];
 
@@ -65,7 +63,7 @@ export async function GET() {
     );
   }
 
-  // 3. Generate ticket images
+  // Generate ticket images
   const ticketImages: {
     category: string;
     tier: string;
@@ -96,14 +94,14 @@ export async function GET() {
     });
   }
 
-  // 4. Send the email
+  // Send the email
   await sendTicketEmail({
     to: updatedOrder.email,
     tickets: ticketImages,
     order: updatedOrder,
   });
 
-  // 5. Mark order as sent
+  // Mark order as sent
   await prisma.order.update({
     where: { id: orderId },
     data: { ticketSent: true },

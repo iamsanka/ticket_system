@@ -19,9 +19,7 @@ export async function POST(req: Request) {
 
     const where: any = {};
 
-    // -----------------------------
     // TICKET CODE SEARCH (Overrides all other filters)
-    // -----------------------------
     if (ticketCode?.trim()) {
       const ticket = await prisma.ticket.findFirst({
         where: { ticketCode: ticketCode.trim() },
@@ -52,9 +50,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // -----------------------------
     // CONTACT NUMBER SEARCH
-    // -----------------------------
     if (contactNo?.trim()) {
       where.contactNo = {
         contains: contactNo.trim(),
@@ -62,9 +58,7 @@ export async function POST(req: Request) {
       };
     }
 
-    // -----------------------------
     // EMAIL SEARCH
-    // -----------------------------
     if (email?.trim()) {
       where.email = {
         contains: email.trim(),
@@ -72,25 +66,19 @@ export async function POST(req: Request) {
       };
     }
 
-    // -----------------------------
     // STATUS FILTER
-    // -----------------------------
     if (status && status !== "ALL") {
       where.status = status;
     }
 
-    // -----------------------------
     // PAID FILTER
-    // -----------------------------
     if (paid === "true") {
       where.paid = true;
     } else if (paid === "false") {
       where.paid = false;
     }
 
-    // -----------------------------
     // NOTE SEARCH
-    // -----------------------------
     if (note?.trim()) {
       where.receiptNote = {
         contains: note.trim(),
@@ -98,9 +86,7 @@ export async function POST(req: Request) {
       };
     }
 
-    // -----------------------------
     // MAIN ORDER SEARCH
-    // -----------------------------
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         where,

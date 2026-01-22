@@ -1,7 +1,7 @@
 import { StripeProvider } from "@/app/component/StripeProvider";
 import { CheckoutForm } from "@/app/component/CheckoutForm";
 
-console.log("🔥 USING CHECKOUT PAGE VERSION FIXED");
+console.log("USING CHECKOUT PAGE VERSION FIXED");
 
 interface CheckoutParams {
   searchParams: Promise<Record<string, string>>;
@@ -49,10 +49,10 @@ export default async function CheckoutPage({ searchParams }: CheckoutParams) {
     return <div style={{ color: "white", padding: 40 }}>Missing orderId</div>;
   }
 
-  // 1. Load order
+  // Load order
   const order = await fetchOrder(orderId);
 
-  // 2. Create PaymentIntent using order details
+  // Create PaymentIntent using order details
   const clientSecret = await fetchClientSecret(order);
 
   return (

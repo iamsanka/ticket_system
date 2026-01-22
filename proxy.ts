@@ -4,30 +4,30 @@ import type { NextRequest } from "next/server";
 export function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
-  // 1) Allow API routes to pass through (critical for login to work)
+  // Allow API routes to pass through (critical for login to work)
   if (path.startsWith("/api/admin")) {
     return NextResponse.next();
   }
 
-  // 2) Read the correct cookie (only ONE cookie name)
+  // Read the correct cookie (only ONE cookie name)
   const session = req.cookies.get("admin_session_v2")?.value;
   const isLoggedIn = session === "true";
 
-  // 3) Define protected routes
+  // Define protected routes
   const isLoginPage = path === "/admin/login";
   const isAdminPage = path === "/admin" || path.startsWith("/admin/");
 
-  // 4) Redirect unauthenticated users away from admin pages
+  // Redirect unauthenticated users away from admin pages
   if (!isLoggedIn && isAdminPage && !isLoginPage) {
     return NextResponse.redirect(new URL("/admin/login", req.url));
   }
 
-  // 5) Redirect logged-in users away from login page
+  // Redirect logged-in users away from login page
   if (isLoggedIn && isLoginPage) {
     return NextResponse.redirect(new URL("/admin", req.url));
   }
 
-  // Debug (optional)
+  // Debug
   console.log("PROXY RUNNING:", path, "SESSION:", session);
 
   return NextResponse.next();

@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     const updated = await prisma.ticket.update({
       where: { id: ticketId },
       data: {
-        usedAt: new Date(), // ✔ correct field from your schema
+        usedAt: new Date(),
       },
     });
 

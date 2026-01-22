@@ -1,5 +1,3 @@
-// app/api/send-ticket/route.ts
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateQr } from "@/lib/generateQr";

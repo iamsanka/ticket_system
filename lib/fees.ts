@@ -1,5 +1,3 @@
-// lib/fees.ts
-
 export const VAT_RATE = 0.135;
 
 export function calculateVat(total: number) {
