@@ -16,13 +16,35 @@ var geistMono = google_1.Geist_Mono({
 });
 exports.metadata = {
     title: "Taprobane Tickets",
-    description: "Premium ticketing for Taprobane events"
+    description: "Premium ticketing for Taprobane events",
+    icons: {
+        icon: "/logo.png"
+    },
+    openGraph: {
+        title: "Taprobane Tickets",
+        description: "Premium ticketing for Taprobane events",
+        url: "https://tickets-taprobane.com/",
+        siteName: "Taprobane Tickets",
+        images: [
+            {
+                url: "https://tickets-taprobane.com/logo.png",
+                width: 1200,
+                height: 630,
+                alt: "Taprobane Tickets"
+            },
+        ],
+        type: "website"
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "Taprobane Tickets",
+        description: "Premium ticketing for Taprobane events",
+        images: ["https://tickets-taprobane.com/logo.png"]
+    }
 };
 function RootLayout(_a) {
     var children = _a.children;
     return (React.createElement("html", { lang: "en" },
-        React.createElement("head", null,
-            React.createElement("link", { rel: "icon", href: "/logo.png", type: "image/png" })),
         React.createElement("body", { className: geistSans.variable + " " + geistMono.variable + " antialiased bg-white text-black" },
             children,
             React.createElement(Footer_1["default"], null))));
