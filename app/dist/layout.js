@@ -21,6 +21,8 @@ exports.metadata = {
 function RootLayout(_a) {
     var children = _a.children;
     return (React.createElement("html", { lang: "en" },
+        React.createElement("head", null,
+            React.createElement("link", { rel: "icon", href: "/logo.png", type: "image/png" })),
         React.createElement("body", { className: geistSans.variable + " " + geistMono.variable + " antialiased bg-white text-black" },
             children,
             React.createElement(Footer_1["default"], null))));
