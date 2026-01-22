@@ -36,81 +36,62 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.GET = void 0;
+exports.POST = void 0;
 var server_1 = require("next/server");
 var prisma_1 = require("@/lib/prisma");
 var generateQr_1 = require("@/lib/generateQr");
 var generateTicketImage_1 = require("@/lib/generateTicketImage");
 var sendTicketEmails_1 = require("@/lib/sendTicketEmails");
-function GET() {
+function POST(req) {
     var _a, _b, _c;
     return __awaiter(this, void 0, void 0, function () {
-        function pushTickets(count, category, tier) {
-            for (var i = 0; i < count; i++) {
-                ticketsToCreate_1.push({
-                    orderId: orderId,
-                    category: category,
-                    tier: tier,
-                    ticketCode: "" + category[0] + tier[0] + "-" + Math.floor(100000 + Math.random() * 900000),
-                    qrCode: "QR-" + Math.floor(Math.random() * 1000000)
-                });
-            }
-        }
-        var orderId, order, ticketsToCreate_1, updatedOrder, ticketImages, _i, _d, ticket, qrBuffer, qrBase64, ticketImage;
+        var orderId, order, ticketImages, _i, _d, ticket, qrBuffer, qrBase64, ticketImage, error_1;
         return __generator(this, function (_e) {
             switch (_e.label) {
                 case 0:
-                    orderId = "cmkodwzd90003b2bkjp5xt2sx";
+                    _e.trys.push([0, 10, , 11]);
+                    return [4 /*yield*/, req.json()];
+                case 1:
+                    orderId = (_e.sent()).orderId;
+                    if (!orderId) {
+                        return [2 /*return*/, server_1.NextResponse.json({ error: "orderId is required" }, { status: 400 })];
+                    }
                     return [4 /*yield*/, prisma_1.prisma.order.findUnique({
                             where: { id: orderId },
-                            include: { event: true, tickets: true }
+                            include: {
+                                event: true,
+                                tickets: true
+                            }
                         })];
-                case 1:
+                case 2:
                     order = _e.sent();
                     if (!order) {
                         return [2 /*return*/, server_1.NextResponse.json({ error: "Order not found" }, { status: 404 })];
                     }
-                    if (!(!order.tickets || order.tickets.length === 0)) return [3 /*break*/, 3];
-                    ticketsToCreate_1 = [];
-                    pushTickets(order.adultLounge, "ADULT", "LOUNGE");
-                    pushTickets(order.adultStandard, "ADULT", "STANDARD");
-                    pushTickets(order.childLounge, "CHILD", "LOUNGE");
-                    pushTickets(order.childStandard, "CHILD", "STANDARD");
-                    if (!(ticketsToCreate_1.length > 0)) return [3 /*break*/, 3];
-                    return [4 /*yield*/, prisma_1.prisma.ticket.createMany({ data: ticketsToCreate_1 })];
-                case 2:
-                    _e.sent();
-                    _e.label = 3;
-                case 3: return [4 /*yield*/, prisma_1.prisma.order.findUnique({
-                        where: { id: orderId },
-                        include: { event: true, tickets: true }
-                    })];
-                case 4:
-                    updatedOrder = _e.sent();
-                    if (!updatedOrder || updatedOrder.tickets.length === 0) {
-                        return [2 /*return*/, server_1.NextResponse.json({ error: "Failed to create tickets" }, { status: 500 })];
+                    if (!order.tickets || order.tickets.length === 0) {
+                        return [2 /*return*/, server_1.NextResponse.json({ error: "No tickets exist for this order" }, { status: 400 })];
                     }
                     ticketImages = [];
-                    _i = 0, _d = updatedOrder.tickets;
-                    _e.label = 5;
-                case 5:
-                    if (!(_i < _d.length)) return [3 /*break*/, 9];
+                    _i = 0, _d = order.tickets;
+                    _e.label = 3;
+                case 3:
+                    if (!(_i < _d.length)) return [3 /*break*/, 7];
                     ticket = _d[_i];
                     return [4 /*yield*/, generateQr_1.generateQr(ticket.qrCode)];
-                case 6:
+                case 4:
                     qrBuffer = _e.sent();
                     qrBase64 = qrBuffer.toString("base64");
                     return [4 /*yield*/, generateTicketImage_1.generateBrandedTicket({
                             qrPng: qrBase64,
-                            event: updatedOrder.event.title,
-                            name: (_a = updatedOrder.name) !== null && _a !== void 0 ? _a : "Guest",
-                            date: updatedOrder.event.date.toISOString().split("T")[0],
-                            venue: updatedOrder.event.venue,
+                            event: order.event.title,
+                            name: (_a = order.name) !== null && _a !== void 0 ? _a : "Guest",
+                            date: order.event.date.toISOString().split("T")[0],
+                            venue: order.event.venue,
                             category: ticket.category,
                             tier: ticket.tier,
                             ticketCode: (_b = ticket.ticketCode) !== null && _b !== void 0 ? _b : ""
                         })];
-                case 7:
+                case 5:
                     ticketImage = _e.sent();
                     ticketImages.push({
                         category: ticket.category,
@@ -118,31 +99,36 @@ function GET() {
                         code: (_c = ticket.ticketCode) !== null && _c !== void 0 ? _c : "",
                         image: ticketImage
                     });
-                    _e.label = 8;
-                case 8:
+                    _e.label = 6;
+                case 6:
                     _i++;
-                    return [3 /*break*/, 5];
-                case 9: 
-                // Send the email
+                    return [3 /*break*/, 3];
+                case 7: 
+                // Send email with attachments
                 return [4 /*yield*/, sendTicketEmails_1.sendTicketEmail({
-                        to: updatedOrder.email,
+                        to: order.email,
                         tickets: ticketImages,
-                        order: updatedOrder
+                        order: order
                     })];
-                case 10:
-                    // Send the email
+                case 8:
+                    // Send email with attachments
                     _e.sent();
-                    // Mark order as sent
+                    // Mark as sent
                     return [4 /*yield*/, prisma_1.prisma.order.update({
                             where: { id: orderId },
                             data: { ticketSent: true }
                         })];
-                case 11:
-                    // Mark order as sent
+                case 9:
+                    // Mark as sent
                     _e.sent();
-                    return [2 /*return*/, server_1.NextResponse.json({ message: "Test tickets generated + emailed" })];
+                    return [2 /*return*/, server_1.NextResponse.json({ success: true })];
+                case 10:
+                    error_1 = _e.sent();
+                    console.error("Resend email error:", error_1);
+                    return [2 /*return*/, server_1.NextResponse.json({ error: "Internal server error" }, { status: 500 })];
+                case 11: return [2 /*return*/];
             }
         });
     });
 }
-exports.GET = GET;
+exports.POST = POST;

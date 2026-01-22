@@ -1,5 +1,3 @@
-// lib/invoiceImageToPdf.ts
-
 import { PDFDocument } from "pdf-lib";
 
 export async function invoiceImageToPdf(imageBuffer: Buffer) {

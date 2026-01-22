@@ -6,7 +6,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params; // ⭐ FIX: await the params
+    const { id } = await context.params; //await the params
     const orderId = id;
 
     if (!orderId) {

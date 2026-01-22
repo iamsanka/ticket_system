@@ -26,15 +26,13 @@ export async function POST(req: Request) {
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
-  // ─────────────────────────────────────────────
   // 1. PAYMENT INTENT SUCCEEDED (Card/Klarna)
-  // ─────────────────────────────────────────────
   if (event.type === "payment_intent.succeeded") {
     const intent = event.data.object as Stripe.PaymentIntent;
     const orderId = intent.metadata?.orderId;
 
     if (orderId) {
-      console.log("✔ payment_intent.succeeded for order:", orderId);
+      console.log("payment_intent.succeeded for order:", orderId);
 
       const order = await prisma.order.findUnique({
         where: { id: orderId },
@@ -95,15 +93,13 @@ export async function POST(req: Request) {
     }
   }
 
-  // ─────────────────────────────────────────────
   // 2. PAYMENT FAILED
-  // ─────────────────────────────────────────────
   if (event.type === "payment_intent.payment_failed") {
     const intent = event.data.object as Stripe.PaymentIntent;
     const orderId = intent.metadata?.orderId;
 
     if (orderId) {
-      console.log("❌ payment_intent.payment_failed for order:", orderId);
+      console.log("payment_intent.payment_failed for order:", orderId);
 
       await prisma.order.update({
         where: { id: orderId },

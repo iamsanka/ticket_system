@@ -1,5 +1,3 @@
-// lib/invoicePdf.ts
-
 import { PDFDocument, StandardFonts } from "pdf-lib";
 
 export async function invoiceHtmlToPdfBuffer(html: string): Promise<Buffer> {

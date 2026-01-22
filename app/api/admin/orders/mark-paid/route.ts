@@ -51,9 +51,7 @@ export async function POST(req: Request) {
       },
     });
 
-    // ----------------------------------------------------
     // 1. Create tickets if missing (Edenred / ePassi flow)
-    // ----------------------------------------------------
     if (!order.tickets || order.tickets.length === 0) {
       const ticketsToCreate: TicketCreateInput[] = [];
 
@@ -93,9 +91,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // ----------------------------------------------------
     // 2. Generate branded ticket images
-    // ----------------------------------------------------
     const ticketImages: {
       category: string;
       tier: string;
@@ -126,18 +122,14 @@ export async function POST(req: Request) {
       });
     }
 
-    // ----------------------------------------------------
     // 3. Send ticket email
-    // ----------------------------------------------------
     await sendTicketEmail({
       to: order.email,
       tickets: ticketImages,
       order,
     });
 
-    // ----------------------------------------------------
     // 4. Mark as sent
-    // ----------------------------------------------------
     await prisma.order.update({
       where: { id: orderId },
       data: { ticketSent: true },

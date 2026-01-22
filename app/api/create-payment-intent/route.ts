@@ -1,4 +1,3 @@
-// app/api/create-payment-intent/route.ts
 import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -8,7 +7,6 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // You can compute this from your DB/cart instead of trusting client
     const { amount, currency = "eur", metadata } = body;
 
     if (!amount || amount <= 0) {
@@ -22,7 +20,7 @@ export async function POST(req: NextRequest) {
       amount, // in cents
       currency,
       automatic_payment_methods: {
-        enabled: true, // enables cards, Klarna, etc. depending on your Stripe settings
+        enabled: true, // enables cards, Klarna, set this on Stripe settings
       },
       metadata,
     });

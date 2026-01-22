@@ -5,7 +5,7 @@ export async function POST(req: Request) {
   try {
     const { ticketCode } = await req.json();
 
-    // If no ticketCode → load ALL tickets
+    // If no ticketCode, load ALL tickets
     if (!ticketCode || ticketCode.trim() === "") {
       const allTickets = await prisma.ticket.findMany({
         include: { order: true },

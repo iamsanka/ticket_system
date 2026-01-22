@@ -4,9 +4,7 @@ import { prisma } from "@/lib/prisma";
 export async function POST(req: Request) {
   const { qrCode, orderId } = await req.json();
 
-  // ─────────────────────────────────────────────
   // 1. MANUAL CHECK-IN BY ORDER ID
-  // ─────────────────────────────────────────────
   if (orderId) {
     await prisma.ticket.updateMany({
       where: { orderId },
@@ -16,9 +14,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ valid: true, manual: true });
   }
 
-  // ─────────────────────────────────────────────
   // 2. QR VALIDATION
-  // ─────────────────────────────────────────────
   if (!qrCode) {
     return NextResponse.json(
       { valid: false, reason: "Missing QR code" },
@@ -26,7 +22,7 @@ export async function POST(req: Request) {
     );
   }
 
-  // Scanner may send:
+  // Scanner sends:
   //  - raw string: "<orderId>-ADULT-LOUNGE-SSAN-005200001"
   //  - JSON: {"qrCode": "<orderId>-ADULT-LOUNGE-SSAN-005200001"}
   let raw = qrCode as string;
