@@ -61,7 +61,9 @@ function CheckoutForm(_a) {
                     setErrorMessage(null);
                     return [4 /*yield*/, stripe.confirmPayment({
                             elements: elements,
-                            confirmParams: { return_url: undefined },
+                            confirmParams: {
+                                return_url: window.location.origin + "/thank-you"
+                            },
                             redirect: "if_required"
                         })];
                 case 1:
