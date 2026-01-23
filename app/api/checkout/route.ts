@@ -4,6 +4,17 @@ import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
+function noCacheJson(data: any, status = 200) {
+  return NextResponse.json(data, {
+    status,
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -21,10 +32,7 @@ export async function POST(req: Request) {
     } = body;
 
     if (!eventId || !email || !name || !paymentMethod) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+      return noCacheJson({ error: "Missing required fields" }, 400);
     }
 
     const event = await prisma.event.findUnique({
@@ -32,10 +40,7 @@ export async function POST(req: Request) {
     });
 
     if (!event) {
-      return NextResponse.json(
-        { error: "Event not found" },
-        { status: 404 }
-      );
+      return noCacheJson({ error: "Event not found" }, 404);
     }
 
     // 1. Calculate subtotal
@@ -46,12 +51,12 @@ export async function POST(req: Request) {
       childStandard * event.childStandardPrice;
 
     if (subtotal < 50) {
-      return NextResponse.json(
+      return noCacheJson(
         {
           error:
             "Minimum charge is €0.50. Please select at least one ticket.",
         },
-        { status: 400 }
+        400
       );
     }
 
@@ -65,14 +70,14 @@ export async function POST(req: Request) {
       });
 
       if (currentLoungeCount + adultLounge > 100) {
-        return NextResponse.json(
+        return noCacheJson(
           {
             error: `Only ${Math.max(
               0,
               100 - currentLoungeCount
             )} Adult Lounge seats remaining.`,
           },
-          { status: 400 }
+          400
         );
       }
     }
@@ -117,7 +122,7 @@ export async function POST(req: Request) {
         },
       });
 
-      return NextResponse.json({ orderId: order.id });
+      return noCacheJson({ orderId: order.id });
     }
 
     // Stripe embedded flow (card/Klarna)
@@ -150,15 +155,15 @@ export async function POST(req: Request) {
       receipt_email: email,
     });
 
-    return NextResponse.json({
+    return noCacheJson({
       clientSecret: paymentIntent.client_secret,
       orderId,
     });
   } catch (error: any) {
     console.error("Checkout error:", error);
-    return NextResponse.json(
+    return noCacheJson(
       { error: error.message || "Checkout failed" },
-      { status: 500 }
+      500
     );
   }
 }
