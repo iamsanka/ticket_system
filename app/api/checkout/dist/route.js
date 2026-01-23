@@ -43,11 +43,11 @@ var stripe_1 = require("stripe");
 var stripe = new stripe_1["default"](process.env.STRIPE_SECRET_KEY);
 function POST(req) {
     return __awaiter(this, void 0, void 0, function () {
-        var body, eventId, name, email, contactNo, _a, adultLounge, _b, adultStandard, _c, childLounge, _d, childStandard, paymentMethod, event, subtotal, currentLoungeCount, serviceFee, totalTickets, totalAmount, order, existing, orderId, order, paymentIntent, error_1;
+        var body, eventId, name, email, contactNo, _a, adultLounge, _b, adultStandard, _c, childLounge, _d, childStandard, paymentMethod, event, subtotal, currentLoungeCount, serviceFee, totalTickets, totalAmount, order_1, order, orderId, paymentIntent, error_1;
         return __generator(this, function (_e) {
             switch (_e.label) {
                 case 0:
-                    _e.trys.push([0, 12, , 13]);
+                    _e.trys.push([0, 9, , 10]);
                     return [4 /*yield*/, req.json()];
                 case 1:
                     body = _e.sent();
@@ -119,24 +119,9 @@ function POST(req) {
                             }
                         })];
                 case 5:
-                    order = _e.sent();
-                    return [2 /*return*/, server_1.NextResponse.json({ orderId: order.id })];
-                case 6: return [4 /*yield*/, prisma_1.prisma.order.findFirst({
-                        where: {
-                            email: email,
-                            eventId: eventId,
-                            paid: false,
-                            status: "pending",
-                            paymentMethod: "stripe"
-                        }
-                    })];
-                case 7:
-                    existing = _e.sent();
-                    orderId = void 0;
-                    if (!existing) return [3 /*break*/, 8];
-                    orderId = existing.id;
-                    return [3 /*break*/, 10];
-                case 8: return [4 /*yield*/, prisma_1.prisma.order.create({
+                    order_1 = _e.sent();
+                    return [2 /*return*/, server_1.NextResponse.json({ orderId: order_1.id })];
+                case 6: return [4 /*yield*/, prisma_1.prisma.order.create({
                         data: {
                             eventId: eventId,
                             name: name,
@@ -153,27 +138,26 @@ function POST(req) {
                             paid: false
                         }
                     })];
-                case 9:
+                case 7:
                     order = _e.sent();
                     orderId = order.id;
-                    _e.label = 10;
-                case 10: return [4 /*yield*/, stripe.paymentIntents.create({
-                        amount: subtotal,
-                        currency: "eur",
-                        metadata: { orderId: orderId },
-                        receipt_email: email
-                    })];
-                case 11:
+                    return [4 /*yield*/, stripe.paymentIntents.create({
+                            amount: subtotal,
+                            currency: "eur",
+                            metadata: { orderId: orderId },
+                            receipt_email: email
+                        })];
+                case 8:
                     paymentIntent = _e.sent();
                     return [2 /*return*/, server_1.NextResponse.json({
                             clientSecret: paymentIntent.client_secret,
                             orderId: orderId
                         })];
-                case 12:
+                case 9:
                     error_1 = _e.sent();
                     console.error("Checkout error:", error_1);
                     return [2 /*return*/, server_1.NextResponse.json({ error: error_1.message || "Checkout failed" }, { status: 500 })];
-                case 13: return [2 /*return*/];
+                case 10: return [2 /*return*/];
             }
         });
     });
