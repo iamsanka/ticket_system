@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       );
     }
 
-    //Adult Lounge seat limit check (max 100)
+    // Adult Lounge seat limit check (max 100)
     if (adultLounge > 0) {
       const currentLoungeCount = await prisma.ticket.count({
         where: {
@@ -121,43 +121,28 @@ export async function POST(req: Request) {
     }
 
     // Stripe embedded flow (card/Klarna)
-
-    // Prevent duplicate orders: reuse existing pending unpaid Stripe order
-    const existing = await prisma.order.findFirst({
-      where: {
-        email,
+    // ALWAYS create a new order — never reuse old ones
+    const order = await prisma.order.create({
+      data: {
         eventId,
-        paid: false,
-        status: "pending",
+        name,
+        email,
+        contactNo,
+        adultLounge,
+        adultStandard,
+        childLounge,
+        childStandard,
+        serviceFee: 0,
+        totalAmount: subtotal,
         paymentMethod: "stripe",
+        status: "pending",
+        paid: false,
       },
     });
 
-    let orderId: string;
+    const orderId = order.id;
 
-    if (existing) {
-      orderId = existing.id;
-    } else {
-      const order = await prisma.order.create({
-        data: {
-          eventId,
-          name,
-          email,
-          contactNo,
-          adultLounge,
-          adultStandard,
-          childLounge,
-          childStandard,
-          serviceFee: 0,
-          totalAmount: subtotal,
-          paymentMethod: "stripe",
-          status: "pending",
-          paid: false,
-        },
-      });
-      orderId = order.id;
-    }
-
+    // Create a fresh PaymentIntent every time
     const paymentIntent = await stripe.paymentIntents.create({
       amount: subtotal,
       currency: "eur",
