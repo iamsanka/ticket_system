@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function AdminOrdersPage() {
   const [form, setForm] = useState({
@@ -15,28 +15,27 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // SUMMARY CALCULATION (now uses order table fields)
-  function getSummary() {
-    const summary = {
-      adultLounge: { paid: 0, unpaid: 0 },
-      adultStandard: { paid: 0, unpaid: 0 },
-      childLounge: { paid: 0, unpaid: 0 },
-      childStandard: { paid: 0, unpaid: 0 },
-    };
+  // GLOBAL SUMMARY (all orders in DB)
+  const [summary, setSummary] = useState<{
+    adultLounge: { paid: number; unpaid: number };
+    adultStandard: { paid: number; unpaid: number };
+    childLounge: { paid: number; unpaid: number };
+    childStandard: { paid: number; unpaid: number };
+  } | null>(null);
 
-    for (const order of orders) {
-      const isPaid = order.paid ? "paid" : "unpaid";
-
-      summary.adultLounge[isPaid] += order.adultLounge || 0;
-      summary.adultStandard[isPaid] += order.adultStandard || 0;
-      summary.childLounge[isPaid] += order.childLounge || 0;
-      summary.childStandard[isPaid] += order.childStandard || 0;
+  async function fetchSummary() {
+    try {
+      const res = await fetch("/api/admin/orders/summary");
+      const data = await res.json();
+      setSummary(data.summary || null);
+    } catch (err) {
+      console.error("Failed to fetch summary", err);
     }
-
-    return summary;
   }
 
-  const summary = getSummary();
+  useEffect(() => {
+    fetchSummary();
+  }, []);
 
   // SEARCH ORDERS
   async function handleSearch(e?: React.FormEvent) {
@@ -76,6 +75,9 @@ export default function AdminOrdersPage() {
 
         const updated = await refreshed.json();
         setOrders(updated.orders || []);
+
+        // refresh global summary
+        fetchSummary();
       } else {
         alert(data.error || "Failed to mark as paid");
       }
@@ -125,6 +127,9 @@ export default function AdminOrdersPage() {
 
         const updated = await refreshed.json();
         setOrders(updated.orders || []);
+
+        // refresh global summary
+        fetchSummary();
       } else {
         alert(data.error || "Failed to delete order");
       }
@@ -145,42 +150,44 @@ export default function AdminOrdersPage() {
 
       <h1 className="text-2xl font-bold mb-6">Order Management</h1>
 
-      {/* SUMMARY TABLE */}
-      <div className="mb-6 border p-4 rounded bg-white text-black">
-        <h2 className="text-lg font-semibold mb-3">Ticket Summary</h2>
+      {/* GLOBAL SUMMARY TABLE (ALL ORDERS) */}
+      {summary && (
+        <div className="mb-6 border p-4 rounded bg-white text-black">
+          <h2 className="text-lg font-semibold mb-3">Ticket Summary</h2>
 
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr>
-              <th className="border-b p-2">Category</th>
-              <th className="border-b p-2">Paid</th>
-              <th className="border-b p-2">Unpaid</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="p-2 border-b">Adult Lounge</td>
-              <td className="p-2 border-b">{summary.adultLounge.paid}</td>
-              <td className="p-2 border-b">{summary.adultLounge.unpaid}</td>
-            </tr>
-            <tr>
-              <td className="p-2 border-b">Adult Standard</td>
-              <td className="p-2 border-b">{summary.adultStandard.paid}</td>
-              <td className="p-2 border-b">{summary.adultStandard.unpaid}</td>
-            </tr>
-            <tr>
-              <td className="p-2 border-b">Kids Lounge</td>
-              <td className="p-2 border-b">{summary.childLounge.paid}</td>
-              <td className="p-2 border-b">{summary.childLounge.unpaid}</td>
-            </tr>
-            <tr>
-              <td className="p-2 border-b">Kids Standard</td>
-              <td className="p-2 border-b">{summary.childStandard.paid}</td>
-              <td className="p-2 border-b">{summary.childStandard.unpaid}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr>
+                <th className="border-b p-2">Category</th>
+                <th className="border-b p-2">Paid</th>
+                <th className="border-b p-2">Unpaid</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="p-2 border-b">Adult Lounge</td>
+                <td className="p-2 border-b">{summary.adultLounge.paid}</td>
+                <td className="p-2 border-b">{summary.adultLounge.unpaid}</td>
+              </tr>
+              <tr>
+                <td className="p-2 border-b">Adult Standard</td>
+                <td className="p-2 border-b">{summary.adultStandard.paid}</td>
+                <td className="p-2 border-b">{summary.adultStandard.unpaid}</td>
+              </tr>
+              <tr>
+                <td className="p-2 border-b">Kids Lounge</td>
+                <td className="p-2 border-b">{summary.childLounge.paid}</td>
+                <td className="p-2 border-b">{summary.childLounge.unpaid}</td>
+              </tr>
+              <tr>
+                <td className="p-2 border-b">Kids Standard</td>
+                <td className="p-2 border-b">{summary.childStandard.paid}</td>
+                <td className="p-2 border-b">{summary.childStandard.unpaid}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* SEARCH FORM */}
       <form onSubmit={handleSearch} className="space-y-4 mb-8">
@@ -260,7 +267,6 @@ export default function AdminOrdersPage() {
       ) : (
         <ul className="space-y-4">
           {orders.map((order) => {
-            // NEW: Use order table fields instead of tickets table
             const adultLounge = order.adultLounge || 0;
             const adultStandard = order.adultStandard || 0;
             const childLounge = order.childLounge || 0;

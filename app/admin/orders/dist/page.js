@@ -60,25 +60,35 @@ function AdminOrdersPage() {
     }), form = _a[0], setForm = _a[1];
     var _b = react_1.useState([]), orders = _b[0], setOrders = _b[1];
     var _c = react_1.useState(false), loading = _c[0], setLoading = _c[1];
-    // SUMMARY CALCULATION (now uses order table fields)
-    function getSummary() {
-        var summary = {
-            adultLounge: { paid: 0, unpaid: 0 },
-            adultStandard: { paid: 0, unpaid: 0 },
-            childLounge: { paid: 0, unpaid: 0 },
-            childStandard: { paid: 0, unpaid: 0 }
-        };
-        for (var _i = 0, orders_1 = orders; _i < orders_1.length; _i++) {
-            var order = orders_1[_i];
-            var isPaid = order.paid ? "paid" : "unpaid";
-            summary.adultLounge[isPaid] += order.adultLounge || 0;
-            summary.adultStandard[isPaid] += order.adultStandard || 0;
-            summary.childLounge[isPaid] += order.childLounge || 0;
-            summary.childStandard[isPaid] += order.childStandard || 0;
-        }
-        return summary;
+    // GLOBAL SUMMARY (all orders in DB)
+    var _d = react_1.useState(null), summary = _d[0], setSummary = _d[1];
+    function fetchSummary() {
+        return __awaiter(this, void 0, void 0, function () {
+            var res, data, err_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        return [4 /*yield*/, fetch("/api/admin/orders/summary")];
+                    case 1:
+                        res = _a.sent();
+                        return [4 /*yield*/, res.json()];
+                    case 2:
+                        data = _a.sent();
+                        setSummary(data.summary || null);
+                        return [3 /*break*/, 4];
+                    case 3:
+                        err_1 = _a.sent();
+                        console.error("Failed to fetch summary", err_1);
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
     }
-    var summary = getSummary();
+    react_1.useEffect(function () {
+        fetchSummary();
+    }, []);
     // SEARCH ORDERS
     function handleSearch(e) {
         return __awaiter(this, void 0, void 0, function () {
@@ -109,7 +119,7 @@ function AdminOrdersPage() {
     // MARK AS PAID
     function markAsPaid(orderId) {
         return __awaiter(this, void 0, void 0, function () {
-            var res, data, refreshed, updated, err_1;
+            var res, data, refreshed, updated, err_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -137,14 +147,16 @@ function AdminOrdersPage() {
                     case 4:
                         updated = _a.sent();
                         setOrders(updated.orders || []);
+                        // refresh global summary
+                        fetchSummary();
                         return [3 /*break*/, 6];
                     case 5:
                         alert(data.error || "Failed to mark as paid");
                         _a.label = 6;
                     case 6: return [3 /*break*/, 8];
                     case 7:
-                        err_1 = _a.sent();
-                        console.error("MarkPaid exception:", err_1);
+                        err_2 = _a.sent();
+                        console.error("MarkPaid exception:", err_2);
                         alert("Unexpected error while marking as paid");
                         return [3 /*break*/, 8];
                     case 8: return [2 /*return*/];
@@ -182,7 +194,7 @@ function AdminOrdersPage() {
     // DELETE ORDER (UNPAID ONLY)
     function deleteOrder(orderId) {
         return __awaiter(this, void 0, void 0, function () {
-            var res, data, refreshed, updated, err_2;
+            var res, data, refreshed, updated, err_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -214,14 +226,16 @@ function AdminOrdersPage() {
                     case 5:
                         updated = _a.sent();
                         setOrders(updated.orders || []);
+                        // refresh global summary
+                        fetchSummary();
                         return [3 /*break*/, 7];
                     case 6:
                         alert(data.error || "Failed to delete order");
                         _a.label = 7;
                     case 7: return [3 /*break*/, 9];
                     case 8:
-                        err_2 = _a.sent();
-                        console.error("DeleteOrder exception:", err_2);
+                        err_3 = _a.sent();
+                        console.error("DeleteOrder exception:", err_3);
                         alert("Unexpected error while deleting order");
                         return [3 /*break*/, 9];
                     case 9: return [2 /*return*/];
@@ -232,7 +246,7 @@ function AdminOrdersPage() {
     return (React.createElement("main", { className: "p-6 max-w-xl mx-auto" },
         React.createElement("button", { onClick: function () { return (window.location.href = "/admin"); }, className: "mb-4 px-4 py-2 bg-yellow-400 text-black font-semibold rounded hover:bg-yellow-300 transition" }, "\u2190 Back to Dashboard"),
         React.createElement("h1", { className: "text-2xl font-bold mb-6" }, "Order Management"),
-        React.createElement("div", { className: "mb-6 border p-4 rounded bg-white text-black" },
+        summary && (React.createElement("div", { className: "mb-6 border p-4 rounded bg-white text-black" },
             React.createElement("h2", { className: "text-lg font-semibold mb-3" }, "Ticket Summary"),
             React.createElement("table", { className: "w-full text-left border-collapse" },
                 React.createElement("thead", null,
@@ -256,7 +270,7 @@ function AdminOrdersPage() {
                     React.createElement("tr", null,
                         React.createElement("td", { className: "p-2 border-b" }, "Kids Standard"),
                         React.createElement("td", { className: "p-2 border-b" }, summary.childStandard.paid),
-                        React.createElement("td", { className: "p-2 border-b" }, summary.childStandard.unpaid))))),
+                        React.createElement("td", { className: "p-2 border-b" }, summary.childStandard.unpaid)))))),
         React.createElement("form", { onSubmit: handleSearch, className: "space-y-4 mb-8" },
             React.createElement("h2", { className: "text-lg font-semibold mb-2" }, "Search Orders"),
             React.createElement("input", { type: "text", placeholder: "Phone (e.g. 0401234567)", value: form.contactNo, onChange: function (e) { return setForm(__assign(__assign({}, form), { contactNo: e.target.value })); }, className: "border p-2 w-full rounded text-black" }),
@@ -277,7 +291,6 @@ function AdminOrdersPage() {
             React.createElement("input", { type: "text", placeholder: "Edenred/ePassi reference or note", value: form.note, onChange: function (e) { return setForm(__assign(__assign({}, form), { note: e.target.value })); }, className: "border p-2 w-full rounded text-black" })),
         React.createElement("h2", { className: "text-lg font-semibold mb-2" }, "Results"),
         orders.length === 0 ? (React.createElement("p", { className: "text-gray-500" }, "No orders found yet.")) : (React.createElement("ul", { className: "space-y-4" }, orders.map(function (order) {
-            // NEW: Use order table fields instead of tickets table
             var adultLounge = order.adultLounge || 0;
             var adultStandard = order.adultStandard || 0;
             var childLounge = order.childLounge || 0;
