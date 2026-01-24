@@ -41,6 +41,17 @@ var server_1 = require("next/server");
 var prisma_1 = require("@/lib/prisma");
 var stripe_1 = require("stripe");
 var stripe = new stripe_1["default"](process.env.STRIPE_SECRET_KEY);
+function noCacheJson(data, status) {
+    if (status === void 0) { status = 200; }
+    return server_1.NextResponse.json(data, {
+        status: status,
+        headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+            Pragma: "no-cache",
+            Expires: "0"
+        }
+    });
+}
 function POST(req) {
     return __awaiter(this, void 0, void 0, function () {
         var body, eventId, name, email, contactNo, _a, adultLounge, _b, adultStandard, _c, childLounge, _d, childStandard, paymentMethod, event, subtotal, currentLoungeCount, serviceFee, totalTickets, totalAmount, order_1, order, orderId, paymentIntent, error_1;
@@ -53,7 +64,7 @@ function POST(req) {
                     body = _e.sent();
                     eventId = body.eventId, name = body.name, email = body.email, contactNo = body.contactNo, _a = body.adultLounge, adultLounge = _a === void 0 ? 0 : _a, _b = body.adultStandard, adultStandard = _b === void 0 ? 0 : _b, _c = body.childLounge, childLounge = _c === void 0 ? 0 : _c, _d = body.childStandard, childStandard = _d === void 0 ? 0 : _d, paymentMethod = body.paymentMethod;
                     if (!eventId || !email || !name || !paymentMethod) {
-                        return [2 /*return*/, server_1.NextResponse.json({ error: "Missing required fields" }, { status: 400 })];
+                        return [2 /*return*/, noCacheJson({ error: "Missing required fields" }, 400)];
                     }
                     return [4 /*yield*/, prisma_1.prisma.event.findUnique({
                             where: { id: eventId }
@@ -61,16 +72,16 @@ function POST(req) {
                 case 2:
                     event = _e.sent();
                     if (!event) {
-                        return [2 /*return*/, server_1.NextResponse.json({ error: "Event not found" }, { status: 404 })];
+                        return [2 /*return*/, noCacheJson({ error: "Event not found" }, 404)];
                     }
                     subtotal = adultLounge * event.adultLoungePrice +
                         adultStandard * event.adultStandardPrice +
                         childLounge * event.childLoungePrice +
                         childStandard * event.childStandardPrice;
                     if (subtotal < 50) {
-                        return [2 /*return*/, server_1.NextResponse.json({
+                        return [2 /*return*/, noCacheJson({
                                 error: "Minimum charge is €0.50. Please select at least one ticket."
-                            }, { status: 400 })];
+                            }, 400)];
                     }
                     if (!(adultLounge > 0)) return [3 /*break*/, 4];
                     return [4 /*yield*/, prisma_1.prisma.ticket.count({
@@ -82,9 +93,9 @@ function POST(req) {
                 case 3:
                     currentLoungeCount = _e.sent();
                     if (currentLoungeCount + adultLounge > 100) {
-                        return [2 /*return*/, server_1.NextResponse.json({
+                        return [2 /*return*/, noCacheJson({
                                 error: "Only " + Math.max(0, 100 - currentLoungeCount) + " Adult Lounge seats remaining."
-                            }, { status: 400 })];
+                            }, 400)];
                     }
                     _e.label = 4;
                 case 4:
@@ -120,7 +131,7 @@ function POST(req) {
                         })];
                 case 5:
                     order_1 = _e.sent();
-                    return [2 /*return*/, server_1.NextResponse.json({ orderId: order_1.id })];
+                    return [2 /*return*/, noCacheJson({ orderId: order_1.id })];
                 case 6: return [4 /*yield*/, prisma_1.prisma.order.create({
                         data: {
                             eventId: eventId,
@@ -149,14 +160,14 @@ function POST(req) {
                         })];
                 case 8:
                     paymentIntent = _e.sent();
-                    return [2 /*return*/, server_1.NextResponse.json({
+                    return [2 /*return*/, noCacheJson({
                             clientSecret: paymentIntent.client_secret,
                             orderId: orderId
                         })];
                 case 9:
                     error_1 = _e.sent();
                     console.error("Checkout error:", error_1);
-                    return [2 /*return*/, server_1.NextResponse.json({ error: error_1.message || "Checkout failed" }, { status: 500 })];
+                    return [2 /*return*/, noCacheJson({ error: error_1.message || "Checkout failed" }, 500)];
                 case 10: return [2 /*return*/];
             }
         });

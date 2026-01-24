@@ -10,6 +10,7 @@ export async function POST(req: Request) {
       status,
       paid,
       note,
+      paymentMethod,   // ⭐ NEW FIELD
       page = 1,
       pageSize = 10,
     } = await req.json();
@@ -76,6 +77,11 @@ export async function POST(req: Request) {
       where.paid = true;
     } else if (paid === "false") {
       where.paid = false;
+    }
+
+    // ⭐ PAYMENT METHOD FILTER
+    if (paymentMethod?.trim()) {
+      where.paymentMethod = paymentMethod.trim();
     }
 
     // NOTE SEARCH

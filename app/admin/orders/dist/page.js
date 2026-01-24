@@ -55,11 +55,12 @@ function AdminOrdersPage() {
         email: "",
         ticketCode: "",
         paid: "",
+        paymentMethod: "",
         note: ""
     }), form = _a[0], setForm = _a[1];
     var _b = react_1.useState([]), orders = _b[0], setOrders = _b[1];
     var _c = react_1.useState(false), loading = _c[0], setLoading = _c[1];
-    // Summary calculation
+    // SUMMARY CALCULATION
     function getSummary() {
         var _a, _b;
         var summary = {
@@ -92,7 +93,7 @@ function AdminOrdersPage() {
         return summary;
     }
     var summary = getSummary();
-    // Search orders
+    // SEARCH ORDERS
     function handleSearch(e) {
         return __awaiter(this, void 0, void 0, function () {
             var res, data;
@@ -119,7 +120,7 @@ function AdminOrdersPage() {
             });
         });
     }
-    // Mark as paid
+    // MARK AS PAID
     function markAsPaid(orderId) {
         return __awaiter(this, void 0, void 0, function () {
             var res, data, refreshed, updated, err_1;
@@ -137,7 +138,6 @@ function AdminOrdersPage() {
                         return [4 /*yield*/, res.json()];
                     case 2:
                         data = _a.sent();
-                        console.log("MarkPaid response:", data);
                         if (!data.ok) return [3 /*break*/, 5];
                         alert(data.message || "Order marked as paid and email sent");
                         return [4 /*yield*/, fetch("/api/admin/orders/search", {
@@ -166,7 +166,7 @@ function AdminOrdersPage() {
             });
         });
     }
-    // Resend email
+    // RESEND EMAIL
     function resendEmail(orderId) {
         return __awaiter(this, void 0, void 0, function () {
             var res, data;
@@ -189,6 +189,56 @@ function AdminOrdersPage() {
                             alert(data.error || "Failed to resend email");
                         }
                         return [2 /*return*/];
+                }
+            });
+        });
+    }
+    // DELETE ORDER (UNPAID ONLY)
+    function deleteOrder(orderId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var res, data, refreshed, updated, err_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!confirm("Are you sure you want to delete this unpaid order?"))
+                            return [2 /*return*/];
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 8, , 9]);
+                        return [4 /*yield*/, fetch("/api/admin/orders/delete", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ orderId: orderId })
+                            })];
+                    case 2:
+                        res = _a.sent();
+                        return [4 /*yield*/, res.json()];
+                    case 3:
+                        data = _a.sent();
+                        if (!data.success) return [3 /*break*/, 6];
+                        alert("Order deleted successfully");
+                        return [4 /*yield*/, fetch("/api/admin/orders/search", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(form)
+                            })];
+                    case 4:
+                        refreshed = _a.sent();
+                        return [4 /*yield*/, refreshed.json()];
+                    case 5:
+                        updated = _a.sent();
+                        setOrders(updated.orders || []);
+                        return [3 /*break*/, 7];
+                    case 6:
+                        alert(data.error || "Failed to delete order");
+                        _a.label = 7;
+                    case 7: return [3 /*break*/, 9];
+                    case 8:
+                        err_2 = _a.sent();
+                        console.error("DeleteOrder exception:", err_2);
+                        alert("Unexpected error while deleting order");
+                        return [3 /*break*/, 9];
+                    case 9: return [2 /*return*/];
                 }
             });
         });
@@ -230,6 +280,11 @@ function AdminOrdersPage() {
                 React.createElement("option", { value: "" }, "All"),
                 React.createElement("option", { value: "true" }, "Paid"),
                 React.createElement("option", { value: "false" }, "Unpaid")),
+            React.createElement("select", { value: form.paymentMethod, onChange: function (e) { return setForm(__assign(__assign({}, form), { paymentMethod: e.target.value })); }, className: "border p-2 w-full rounded text-black" },
+                React.createElement("option", { value: "" }, "All Payment Methods"),
+                React.createElement("option", { value: "stripe" }, "Card / Klarna"),
+                React.createElement("option", { value: "edenred" }, "Edenred"),
+                React.createElement("option", { value: "epassi" }, "ePassi")),
             React.createElement("button", { type: "submit", disabled: loading, className: "bg-blue-600 text-white px-4 py-2 rounded font-semibold hover:bg-blue-700 transition" }, loading ? "Searching…" : "Search")),
         React.createElement("div", { className: "mb-8" },
             React.createElement("h2", { className: "text-lg font-semibold mb-2" }, "Edenred Receipt Note"),
@@ -270,6 +325,16 @@ function AdminOrdersPage() {
                     " ",
                     order.paid ? "TRUE" : "FALSE"),
                 React.createElement("p", null,
+                    React.createElement("strong", null, "Payment Method:"),
+                    " ",
+                    order.paymentMethod === "stripe"
+                        ? "Card / Klarna"
+                        : order.paymentMethod === "edenred"
+                            ? "Edenred"
+                            : order.paymentMethod === "epassi"
+                                ? "ePassi"
+                                : order.paymentMethod),
+                React.createElement("p", null,
                     React.createElement("strong", null, "Note:"),
                     " ",
                     order.receiptNote || "—"),
@@ -289,7 +354,9 @@ function AdminOrdersPage() {
                         " ",
                         childStandard)),
                 React.createElement("div", { className: "flex gap-3 mt-4" },
-                    order.paid ? (React.createElement("button", { disabled: true, className: "bg-gray-400 text-gray-700 px-4 py-2 rounded cursor-not-allowed" }, "Already Paid")) : (React.createElement("button", { onClick: function () { return markAsPaid(order.id); }, className: "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" }, "Mark as Paid")),
+                    order.paid ? (React.createElement("button", { disabled: true, className: "bg-gray-400 text-gray-700 px-4 py-2 rounded cursor-not-allowed" }, "Already Paid")) : (React.createElement(React.Fragment, null,
+                        React.createElement("button", { onClick: function () { return markAsPaid(order.id); }, className: "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" }, "Mark as Paid"),
+                        React.createElement("button", { onClick: function () { return deleteOrder(order.id); }, className: "bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded" }, "Delete Order"))),
                     React.createElement("button", { onClick: function () { return resendEmail(order.id); }, className: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" }, "Resend Email"))));
         })))));
 }
