@@ -6,7 +6,7 @@ import { sendTicketEmail } from "@/lib/sendTicketEmails";
 
 export async function GET() {
   // Hardcoded order ID for testing
-  const orderId = "cmkodwzd90003b2bkjp5xt2sx";
+  const orderId = "cmkqv9ing0015l404ef6lb21g";
 
   // Load order with event + tickets
   const order = await prisma.order.findUnique({
