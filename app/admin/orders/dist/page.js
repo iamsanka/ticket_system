@@ -114,6 +114,9 @@ function AdminOrdersPage() {
         fetchSummary();
         cleanupOldOrders(); // run cleanup on page load
     }, []);
+    react_1.useEffect(function () {
+        handleSearch();
+    }, [page]);
     // SEARCH ORDERS (with pagination)
     function handleSearch(e) {
         return __awaiter(this, void 0, void 0, function () {
