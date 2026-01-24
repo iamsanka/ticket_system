@@ -60,9 +60,8 @@ function AdminOrdersPage() {
     }), form = _a[0], setForm = _a[1];
     var _b = react_1.useState([]), orders = _b[0], setOrders = _b[1];
     var _c = react_1.useState(false), loading = _c[0], setLoading = _c[1];
-    // SUMMARY CALCULATION
+    // SUMMARY CALCULATION (now uses order table fields)
     function getSummary() {
-        var _a, _b;
         var summary = {
             adultLounge: { paid: 0, unpaid: 0 },
             adultStandard: { paid: 0, unpaid: 0 },
@@ -71,24 +70,11 @@ function AdminOrdersPage() {
         };
         for (var _i = 0, orders_1 = orders; _i < orders_1.length; _i++) {
             var order = orders_1[_i];
-            for (var _c = 0, _d = order.tickets; _c < _d.length; _c++) {
-                var t = _d[_c];
-                var isPaid = order.paid ? "paid" : "unpaid";
-                var category = (_a = t.category) === null || _a === void 0 ? void 0 : _a.toLowerCase();
-                var tier = (_b = t.tier) === null || _b === void 0 ? void 0 : _b.toLowerCase();
-                if (category.includes("adult") && tier.includes("lounge")) {
-                    summary.adultLounge[isPaid]++;
-                }
-                if (category.includes("adult") && tier.includes("standard")) {
-                    summary.adultStandard[isPaid]++;
-                }
-                if (category.includes("child") && tier.includes("lounge")) {
-                    summary.childLounge[isPaid]++;
-                }
-                if (category.includes("child") && tier.includes("standard")) {
-                    summary.childStandard[isPaid]++;
-                }
-            }
+            var isPaid = order.paid ? "paid" : "unpaid";
+            summary.adultLounge[isPaid] += order.adultLounge || 0;
+            summary.adultStandard[isPaid] += order.adultStandard || 0;
+            summary.childLounge[isPaid] += order.childLounge || 0;
+            summary.childStandard[isPaid] += order.childStandard || 0;
         }
         return summary;
     }
@@ -291,22 +277,11 @@ function AdminOrdersPage() {
             React.createElement("input", { type: "text", placeholder: "Edenred/ePassi reference or note", value: form.note, onChange: function (e) { return setForm(__assign(__assign({}, form), { note: e.target.value })); }, className: "border p-2 w-full rounded text-black" })),
         React.createElement("h2", { className: "text-lg font-semibold mb-2" }, "Results"),
         orders.length === 0 ? (React.createElement("p", { className: "text-gray-500" }, "No orders found yet.")) : (React.createElement("ul", { className: "space-y-4" }, orders.map(function (order) {
-            var adultLounge = order.tickets.filter(function (t) {
-                var _a, _b;
-                return ((_a = t.category) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes("adult")) && ((_b = t.tier) === null || _b === void 0 ? void 0 : _b.toLowerCase().includes("lounge"));
-            }).length;
-            var adultStandard = order.tickets.filter(function (t) {
-                var _a, _b;
-                return ((_a = t.category) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes("adult")) && ((_b = t.tier) === null || _b === void 0 ? void 0 : _b.toLowerCase().includes("standard"));
-            }).length;
-            var childLounge = order.tickets.filter(function (t) {
-                var _a, _b;
-                return ((_a = t.category) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes("child")) && ((_b = t.tier) === null || _b === void 0 ? void 0 : _b.toLowerCase().includes("lounge"));
-            }).length;
-            var childStandard = order.tickets.filter(function (t) {
-                var _a, _b;
-                return ((_a = t.category) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes("child")) && ((_b = t.tier) === null || _b === void 0 ? void 0 : _b.toLowerCase().includes("standard"));
-            }).length;
+            // NEW: Use order table fields instead of tickets table
+            var adultLounge = order.adultLounge || 0;
+            var adultStandard = order.adultStandard || 0;
+            var childLounge = order.childLounge || 0;
+            var childStandard = order.childStandard || 0;
             return (React.createElement("li", { key: order.id, className: "border p-4 rounded bg-white text-black" },
                 React.createElement("p", null,
                     React.createElement("strong", null, "Name:"),
@@ -334,6 +309,10 @@ function AdminOrdersPage() {
                             : order.paymentMethod === "epassi"
                                 ? "ePassi"
                                 : order.paymentMethod),
+                React.createElement("p", null,
+                    React.createElement("strong", null, "Total Price:"),
+                    " \u20AC",
+                    (order.totalAmount / 100).toFixed(2)),
                 React.createElement("p", null,
                     React.createElement("strong", null, "Note:"),
                     " ",

@@ -15,7 +15,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // SUMMARY CALCULATION
+  // SUMMARY CALCULATION (now uses order table fields)
   function getSummary() {
     const summary = {
       adultLounge: { paid: 0, unpaid: 0 },
@@ -25,24 +25,12 @@ export default function AdminOrdersPage() {
     };
 
     for (const order of orders) {
-      for (const t of order.tickets) {
-        const isPaid = order.paid ? "paid" : "unpaid";
-        const category = t.category?.toLowerCase();
-        const tier = t.tier?.toLowerCase();
+      const isPaid = order.paid ? "paid" : "unpaid";
 
-        if (category.includes("adult") && tier.includes("lounge")) {
-          summary.adultLounge[isPaid]++;
-        }
-        if (category.includes("adult") && tier.includes("standard")) {
-          summary.adultStandard[isPaid]++;
-        }
-        if (category.includes("child") && tier.includes("lounge")) {
-          summary.childLounge[isPaid]++;
-        }
-        if (category.includes("child") && tier.includes("standard")) {
-          summary.childStandard[isPaid]++;
-        }
-      }
+      summary.adultLounge[isPaid] += order.adultLounge || 0;
+      summary.adultStandard[isPaid] += order.adultStandard || 0;
+      summary.childLounge[isPaid] += order.childLounge || 0;
+      summary.childStandard[isPaid] += order.childStandard || 0;
     }
 
     return summary;
@@ -272,29 +260,11 @@ export default function AdminOrdersPage() {
       ) : (
         <ul className="space-y-4">
           {orders.map((order) => {
-            const adultLounge = order.tickets.filter(
-              (t: any) =>
-                t.category?.toLowerCase().includes("adult") &&
-                t.tier?.toLowerCase().includes("lounge"),
-            ).length;
-
-            const adultStandard = order.tickets.filter(
-              (t: any) =>
-                t.category?.toLowerCase().includes("adult") &&
-                t.tier?.toLowerCase().includes("standard"),
-            ).length;
-
-            const childLounge = order.tickets.filter(
-              (t: any) =>
-                t.category?.toLowerCase().includes("child") &&
-                t.tier?.toLowerCase().includes("lounge"),
-            ).length;
-
-            const childStandard = order.tickets.filter(
-              (t: any) =>
-                t.category?.toLowerCase().includes("child") &&
-                t.tier?.toLowerCase().includes("standard"),
-            ).length;
+            // NEW: Use order table fields instead of tickets table
+            const adultLounge = order.adultLounge || 0;
+            const adultStandard = order.adultStandard || 0;
+            const childLounge = order.childLounge || 0;
+            const childStandard = order.childStandard || 0;
 
             return (
               <li
@@ -323,6 +293,11 @@ export default function AdminOrdersPage() {
                       : order.paymentMethod === "epassi"
                         ? "ePassi"
                         : order.paymentMethod}
+                </p>
+
+                <p>
+                  <strong>Total Price:</strong> €
+                  {(order.totalAmount / 100).toFixed(2)}
                 </p>
 
                 <p>

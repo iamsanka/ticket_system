@@ -60,7 +60,7 @@ function GET() {
         return __generator(this, function (_e) {
             switch (_e.label) {
                 case 0:
-                    orderId = "cmkodwzd90003b2bkjp5xt2sx";
+                    orderId = "cmkqv9ing0015l404ef6lb21g";
                     return [4 /*yield*/, prisma_1.prisma.order.findUnique({
                             where: { id: orderId },
                             include: { event: true, tickets: true }
