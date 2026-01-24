@@ -23,6 +23,10 @@ export default function AdminOrdersPage() {
     childStandard: { paid: number; unpaid: number };
   } | null>(null);
 
+  // PAGINATION
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   async function fetchSummary() {
     try {
       const res = await fetch("/api/admin/orders/summary");
@@ -37,7 +41,7 @@ export default function AdminOrdersPage() {
     fetchSummary();
   }, []);
 
-  // SEARCH ORDERS
+  // SEARCH ORDERS (with pagination)
   async function handleSearch(e?: React.FormEvent) {
     if (e) e.preventDefault();
     setLoading(true);
@@ -45,11 +49,12 @@ export default function AdminOrdersPage() {
     const res = await fetch("/api/admin/orders/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, page }),
     });
 
     const data = await res.json();
     setOrders(data.orders || []);
+    setTotalPages(data.totalPages || 1);
     setLoading(false);
   }
 
@@ -66,17 +71,7 @@ export default function AdminOrdersPage() {
 
       if (data.ok) {
         alert(data.message || "Order marked as paid and email sent");
-
-        const refreshed = await fetch("/api/admin/orders/search", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
-
-        const updated = await refreshed.json();
-        setOrders(updated.orders || []);
-
-        // refresh global summary
+        handleSearch();
         fetchSummary();
       } else {
         alert(data.error || "Failed to mark as paid");
@@ -118,17 +113,7 @@ export default function AdminOrdersPage() {
 
       if (data.success) {
         alert("Order deleted successfully");
-
-        const refreshed = await fetch("/api/admin/orders/search", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
-
-        const updated = await refreshed.json();
-        setOrders(updated.orders || []);
-
-        // refresh global summary
+        handleSearch();
         fetchSummary();
       } else {
         alert(data.error || "Failed to delete order");
@@ -265,99 +250,124 @@ export default function AdminOrdersPage() {
       {orders.length === 0 ? (
         <p className="text-gray-500">No orders found yet.</p>
       ) : (
-        <ul className="space-y-4">
-          {orders.map((order) => {
-            const adultLounge = order.adultLounge || 0;
-            const adultStandard = order.adultStandard || 0;
-            const childLounge = order.childLounge || 0;
-            const childStandard = order.childStandard || 0;
+        <>
+          <ul className="space-y-4">
+            {orders.map((order) => {
+              const adultLounge = order.adultLounge || 0;
+              const adultStandard = order.adultStandard || 0;
+              const childLounge = order.childLounge || 0;
+              const childStandard = order.childStandard || 0;
 
-            return (
-              <li
-                key={order.id}
-                className="border p-4 rounded bg-white text-black"
-              >
-                <p>
-                  <strong>Name:</strong> {order.name}
-                </p>
-                <p>
-                  <strong>Email:</strong> {order.email}
-                </p>
-                <p>
-                  <strong>Phone:</strong> {order.contactNo}
-                </p>
-                <p>
-                  <strong>Paid:</strong> {order.paid ? "TRUE" : "FALSE"}
-                </p>
-
-                <p>
-                  <strong>Payment Method:</strong>{" "}
-                  {order.paymentMethod === "stripe"
-                    ? "Card / Klarna"
-                    : order.paymentMethod === "edenred"
-                      ? "Edenred"
-                      : order.paymentMethod === "epassi"
-                        ? "ePassi"
-                        : order.paymentMethod}
-                </p>
-
-                <p>
-                  <strong>Total Price:</strong> €
-                  {(order.totalAmount / 100).toFixed(2)}
-                </p>
-
-                <p>
-                  <strong>Note:</strong> {order.receiptNote || "—"}
-                </p>
-
-                <div className="mt-3 space-y-1">
+              return (
+                <li
+                  key={order.id}
+                  className="border p-4 rounded bg-white text-black"
+                >
                   <p>
-                    <strong>Adults:</strong> Lounge: {adultLounge}, Standard:{" "}
-                    {adultStandard}
+                    <strong>Name:</strong> {order.name}
                   </p>
                   <p>
-                    <strong>Children:</strong> Lounge: {childLounge}, Standard:{" "}
-                    {childStandard}
+                    <strong>Email:</strong> {order.email}
                   </p>
-                </div>
+                  <p>
+                    <strong>Phone:</strong> {order.contactNo}
+                  </p>
+                  <p>
+                    <strong>Paid:</strong> {order.paid ? "TRUE" : "FALSE"}
+                  </p>
 
-                <div className="flex gap-3 mt-4">
-                  {order.paid ? (
+                  <p>
+                    <strong>Payment Method:</strong>{" "}
+                    {order.paymentMethod === "stripe"
+                      ? "Card / Klarna"
+                      : order.paymentMethod === "edenred"
+                        ? "Edenred"
+                        : order.paymentMethod === "epassi"
+                          ? "ePassi"
+                          : order.paymentMethod}
+                  </p>
+
+                  <p>
+                    <strong>Total Price:</strong> €
+                    {(order.totalAmount / 100).toFixed(2)}
+                  </p>
+
+                  <p>
+                    <strong>Note:</strong> {order.receiptNote || "—"}
+                  </p>
+
+                  <div className="mt-3 space-y-1">
+                    <p>
+                      <strong>Adults:</strong> Lounge: {adultLounge}, Standard:{" "}
+                      {adultStandard}
+                    </p>
+                    <p>
+                      <strong>Children:</strong> Lounge: {childLounge},
+                      Standard: {childStandard}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3 mt-4">
+                    {order.paid ? (
+                      <button
+                        disabled
+                        className="bg-gray-400 text-gray-700 px-4 py-2 rounded cursor-not-allowed"
+                      >
+                        Already Paid
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => markAsPaid(order.id)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+                        >
+                          Mark as Paid
+                        </button>
+
+                        <button
+                          onClick={() => deleteOrder(order.id)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+                        >
+                          Delete Order
+                        </button>
+                      </>
+                    )}
+
                     <button
-                      disabled
-                      className="bg-gray-400 text-gray-700 px-4 py-2 rounded cursor-not-allowed"
+                      onClick={() => resendEmail(order.id)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
                     >
-                      Already Paid
+                      Resend Email
                     </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => markAsPaid(order.id)}
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-                      >
-                        Mark as Paid
-                      </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
 
-                      <button
-                        onClick={() => deleteOrder(order.id)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-                      >
-                        Delete Order
-                      </button>
-                    </>
-                  )}
+          {/* PAGINATION */}
+          <div className="flex justify-between mt-6">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+            >
+              ← Previous
+            </button>
 
-                  <button
-                    onClick={() => resendEmail(order.id)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-                  >
-                    Resend Email
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+            <span className="px-4 py-2">
+              Page {page} of {totalPages}
+            </span>
+
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+            >
+              Next →
+            </button>
+          </div>
+        </>
       )}
     </main>
   );
