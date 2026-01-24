@@ -62,6 +62,9 @@ function AdminOrdersPage() {
     var _c = react_1.useState(false), loading = _c[0], setLoading = _c[1];
     // GLOBAL SUMMARY (all orders in DB)
     var _d = react_1.useState(null), summary = _d[0], setSummary = _d[1];
+    // PAGINATION
+    var _e = react_1.useState(1), page = _e[0], setPage = _e[1];
+    var _f = react_1.useState(1), totalPages = _f[0], setTotalPages = _f[1];
     function fetchSummary() {
         return __awaiter(this, void 0, void 0, function () {
             var res, data, err_1;
@@ -89,7 +92,7 @@ function AdminOrdersPage() {
     react_1.useEffect(function () {
         fetchSummary();
     }, []);
-    // SEARCH ORDERS
+    // SEARCH ORDERS (with pagination)
     function handleSearch(e) {
         return __awaiter(this, void 0, void 0, function () {
             var res, data;
@@ -102,7 +105,7 @@ function AdminOrdersPage() {
                         return [4 /*yield*/, fetch("/api/admin/orders/search", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify(form)
+                                body: JSON.stringify(__assign(__assign({}, form), { page: page }))
                             })];
                     case 1:
                         res = _a.sent();
@@ -110,6 +113,7 @@ function AdminOrdersPage() {
                     case 2:
                         data = _a.sent();
                         setOrders(data.orders || []);
+                        setTotalPages(data.totalPages || 1);
                         setLoading(false);
                         return [2 /*return*/];
                 }
@@ -119,11 +123,11 @@ function AdminOrdersPage() {
     // MARK AS PAID
     function markAsPaid(orderId) {
         return __awaiter(this, void 0, void 0, function () {
-            var res, data, refreshed, updated, err_2;
+            var res, data, err_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 7, , 8]);
+                        _a.trys.push([0, 3, , 4]);
                         return [4 /*yield*/, fetch("/api/admin/orders/mark-paid", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
@@ -134,32 +138,21 @@ function AdminOrdersPage() {
                         return [4 /*yield*/, res.json()];
                     case 2:
                         data = _a.sent();
-                        if (!data.ok) return [3 /*break*/, 5];
-                        alert(data.message || "Order marked as paid and email sent");
-                        return [4 /*yield*/, fetch("/api/admin/orders/search", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify(form)
-                            })];
+                        if (data.ok) {
+                            alert(data.message || "Order marked as paid and email sent");
+                            handleSearch();
+                            fetchSummary();
+                        }
+                        else {
+                            alert(data.error || "Failed to mark as paid");
+                        }
+                        return [3 /*break*/, 4];
                     case 3:
-                        refreshed = _a.sent();
-                        return [4 /*yield*/, refreshed.json()];
-                    case 4:
-                        updated = _a.sent();
-                        setOrders(updated.orders || []);
-                        // refresh global summary
-                        fetchSummary();
-                        return [3 /*break*/, 6];
-                    case 5:
-                        alert(data.error || "Failed to mark as paid");
-                        _a.label = 6;
-                    case 6: return [3 /*break*/, 8];
-                    case 7:
                         err_2 = _a.sent();
                         console.error("MarkPaid exception:", err_2);
                         alert("Unexpected error while marking as paid");
-                        return [3 /*break*/, 8];
-                    case 8: return [2 /*return*/];
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/];
                 }
             });
         });
@@ -194,7 +187,7 @@ function AdminOrdersPage() {
     // DELETE ORDER (UNPAID ONLY)
     function deleteOrder(orderId) {
         return __awaiter(this, void 0, void 0, function () {
-            var res, data, refreshed, updated, err_3;
+            var res, data, err_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -202,7 +195,7 @@ function AdminOrdersPage() {
                             return [2 /*return*/];
                         _a.label = 1;
                     case 1:
-                        _a.trys.push([1, 8, , 9]);
+                        _a.trys.push([1, 4, , 5]);
                         return [4 /*yield*/, fetch("/api/admin/orders/delete", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
@@ -213,32 +206,21 @@ function AdminOrdersPage() {
                         return [4 /*yield*/, res.json()];
                     case 3:
                         data = _a.sent();
-                        if (!data.success) return [3 /*break*/, 6];
-                        alert("Order deleted successfully");
-                        return [4 /*yield*/, fetch("/api/admin/orders/search", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify(form)
-                            })];
+                        if (data.success) {
+                            alert("Order deleted successfully");
+                            handleSearch();
+                            fetchSummary();
+                        }
+                        else {
+                            alert(data.error || "Failed to delete order");
+                        }
+                        return [3 /*break*/, 5];
                     case 4:
-                        refreshed = _a.sent();
-                        return [4 /*yield*/, refreshed.json()];
-                    case 5:
-                        updated = _a.sent();
-                        setOrders(updated.orders || []);
-                        // refresh global summary
-                        fetchSummary();
-                        return [3 /*break*/, 7];
-                    case 6:
-                        alert(data.error || "Failed to delete order");
-                        _a.label = 7;
-                    case 7: return [3 /*break*/, 9];
-                    case 8:
                         err_3 = _a.sent();
                         console.error("DeleteOrder exception:", err_3);
                         alert("Unexpected error while deleting order");
-                        return [3 /*break*/, 9];
-                    case 9: return [2 /*return*/];
+                        return [3 /*break*/, 5];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
@@ -290,66 +272,74 @@ function AdminOrdersPage() {
             React.createElement("h2", { className: "text-lg font-semibold mb-2" }, "Edenred Receipt Note"),
             React.createElement("input", { type: "text", placeholder: "Edenred/ePassi reference or note", value: form.note, onChange: function (e) { return setForm(__assign(__assign({}, form), { note: e.target.value })); }, className: "border p-2 w-full rounded text-black" })),
         React.createElement("h2", { className: "text-lg font-semibold mb-2" }, "Results"),
-        orders.length === 0 ? (React.createElement("p", { className: "text-gray-500" }, "No orders found yet.")) : (React.createElement("ul", { className: "space-y-4" }, orders.map(function (order) {
-            var adultLounge = order.adultLounge || 0;
-            var adultStandard = order.adultStandard || 0;
-            var childLounge = order.childLounge || 0;
-            var childStandard = order.childStandard || 0;
-            return (React.createElement("li", { key: order.id, className: "border p-4 rounded bg-white text-black" },
-                React.createElement("p", null,
-                    React.createElement("strong", null, "Name:"),
-                    " ",
-                    order.name),
-                React.createElement("p", null,
-                    React.createElement("strong", null, "Email:"),
-                    " ",
-                    order.email),
-                React.createElement("p", null,
-                    React.createElement("strong", null, "Phone:"),
-                    " ",
-                    order.contactNo),
-                React.createElement("p", null,
-                    React.createElement("strong", null, "Paid:"),
-                    " ",
-                    order.paid ? "TRUE" : "FALSE"),
-                React.createElement("p", null,
-                    React.createElement("strong", null, "Payment Method:"),
-                    " ",
-                    order.paymentMethod === "stripe"
-                        ? "Card / Klarna"
-                        : order.paymentMethod === "edenred"
-                            ? "Edenred"
-                            : order.paymentMethod === "epassi"
-                                ? "ePassi"
-                                : order.paymentMethod),
-                React.createElement("p", null,
-                    React.createElement("strong", null, "Total Price:"),
-                    " \u20AC",
-                    (order.totalAmount / 100).toFixed(2)),
-                React.createElement("p", null,
-                    React.createElement("strong", null, "Note:"),
-                    " ",
-                    order.receiptNote || "—"),
-                React.createElement("div", { className: "mt-3 space-y-1" },
+        orders.length === 0 ? (React.createElement("p", { className: "text-gray-500" }, "No orders found yet.")) : (React.createElement(React.Fragment, null,
+            React.createElement("ul", { className: "space-y-4" }, orders.map(function (order) {
+                var adultLounge = order.adultLounge || 0;
+                var adultStandard = order.adultStandard || 0;
+                var childLounge = order.childLounge || 0;
+                var childStandard = order.childStandard || 0;
+                return (React.createElement("li", { key: order.id, className: "border p-4 rounded bg-white text-black" },
                     React.createElement("p", null,
-                        React.createElement("strong", null, "Adults:"),
-                        " Lounge: ",
-                        adultLounge,
-                        ", Standard:",
+                        React.createElement("strong", null, "Name:"),
                         " ",
-                        adultStandard),
+                        order.name),
                     React.createElement("p", null,
-                        React.createElement("strong", null, "Children:"),
-                        " Lounge: ",
-                        childLounge,
-                        ", Standard:",
+                        React.createElement("strong", null, "Email:"),
                         " ",
-                        childStandard)),
-                React.createElement("div", { className: "flex gap-3 mt-4" },
-                    order.paid ? (React.createElement("button", { disabled: true, className: "bg-gray-400 text-gray-700 px-4 py-2 rounded cursor-not-allowed" }, "Already Paid")) : (React.createElement(React.Fragment, null,
-                        React.createElement("button", { onClick: function () { return markAsPaid(order.id); }, className: "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" }, "Mark as Paid"),
-                        React.createElement("button", { onClick: function () { return deleteOrder(order.id); }, className: "bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded" }, "Delete Order"))),
-                    React.createElement("button", { onClick: function () { return resendEmail(order.id); }, className: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" }, "Resend Email"))));
-        })))));
+                        order.email),
+                    React.createElement("p", null,
+                        React.createElement("strong", null, "Phone:"),
+                        " ",
+                        order.contactNo),
+                    React.createElement("p", null,
+                        React.createElement("strong", null, "Paid:"),
+                        " ",
+                        order.paid ? "TRUE" : "FALSE"),
+                    React.createElement("p", null,
+                        React.createElement("strong", null, "Payment Method:"),
+                        " ",
+                        order.paymentMethod === "stripe"
+                            ? "Card / Klarna"
+                            : order.paymentMethod === "edenred"
+                                ? "Edenred"
+                                : order.paymentMethod === "epassi"
+                                    ? "ePassi"
+                                    : order.paymentMethod),
+                    React.createElement("p", null,
+                        React.createElement("strong", null, "Total Price:"),
+                        " \u20AC",
+                        (order.totalAmount / 100).toFixed(2)),
+                    React.createElement("p", null,
+                        React.createElement("strong", null, "Note:"),
+                        " ",
+                        order.receiptNote || "—"),
+                    React.createElement("div", { className: "mt-3 space-y-1" },
+                        React.createElement("p", null,
+                            React.createElement("strong", null, "Adults:"),
+                            " Lounge: ",
+                            adultLounge,
+                            ", Standard:",
+                            " ",
+                            adultStandard),
+                        React.createElement("p", null,
+                            React.createElement("strong", null, "Children:"),
+                            " Lounge: ",
+                            childLounge,
+                            ", Standard: ",
+                            childStandard)),
+                    React.createElement("div", { className: "flex gap-3 mt-4" },
+                        order.paid ? (React.createElement("button", { disabled: true, className: "bg-gray-400 text-gray-700 px-4 py-2 rounded cursor-not-allowed" }, "Already Paid")) : (React.createElement(React.Fragment, null,
+                            React.createElement("button", { onClick: function () { return markAsPaid(order.id); }, className: "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" }, "Mark as Paid"),
+                            React.createElement("button", { onClick: function () { return deleteOrder(order.id); }, className: "bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded" }, "Delete Order"))),
+                        React.createElement("button", { onClick: function () { return resendEmail(order.id); }, className: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" }, "Resend Email"))));
+            })),
+            React.createElement("div", { className: "flex justify-between mt-6" },
+                React.createElement("button", { disabled: page === 1, onClick: function () { return setPage(function (p) { return Math.max(1, p - 1); }); }, className: "px-4 py-2 bg-gray-200 rounded disabled:opacity-50" }, "\u2190 Previous"),
+                React.createElement("span", { className: "px-4 py-2" },
+                    "Page ",
+                    page,
+                    " of ",
+                    totalPages),
+                React.createElement("button", { disabled: page === totalPages, onClick: function () { return setPage(function (p) { return p + 1; }); }, className: "px-4 py-2 bg-gray-200 rounded disabled:opacity-50" }, "Next \u2192"))))));
 }
 exports["default"] = AdminOrdersPage;
