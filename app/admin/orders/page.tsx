@@ -51,6 +51,10 @@ export default function AdminOrdersPage() {
     cleanupOldOrders(); // run cleanup on page load
   }, []);
 
+  useEffect(() => {
+    handleSearch();
+  }, [page]);
+
   // SEARCH ORDERS (with pagination)
   async function handleSearch(e?: React.FormEvent) {
     if (e) e.preventDefault();

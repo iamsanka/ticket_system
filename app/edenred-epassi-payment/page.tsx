@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { generateQr } from "@/lib/generateQr";
 
-export default async function EdenredPage({
+export default async function EdenredEpassiPage({
   searchParams,
 }: {
   searchParams: Promise<{ orderId?: string }>;
@@ -15,6 +15,7 @@ export default async function EdenredPage({
     where: { id: orderId },
     select: {
       totalAmount: true,
+      paymentMethod: true, // ⭐ IMPORTANT
       event: {
         select: {
           title: true,
@@ -30,11 +31,16 @@ export default async function EdenredPage({
   const eventTitle = order.event.title;
   const eventDate = new Date(order.event.date).toLocaleDateString("fi-FI");
 
-  const edenredUrl = process.env.EDENRED_PAYMENT_URL;
-  if (!edenredUrl) throw new Error("Missing EDENRED_PAYMENT_URL in .env");
+  // Only generate QR for Edenred
+  let qrBase64: string | null = null;
 
-  const qrBuffer = await generateQr(edenredUrl);
-  const qrBase64 = `data:image/png;base64,${qrBuffer.toString("base64")}`;
+  if (order.paymentMethod === "edenred") {
+    const edenredUrl = process.env.EDENRED_PAYMENT_URL;
+    if (!edenredUrl) throw new Error("Missing EDENRED_PAYMENT_URL in .env");
+
+    const qrBuffer = await generateQr(edenredUrl);
+    qrBase64 = `data:image/png;base64,${qrBuffer.toString("base64")}`;
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
@@ -54,29 +60,52 @@ export default async function EdenredPage({
           <p>{eventDate}</p>
         </div>
 
-        {/* Step 1 */}
-        <div className="bg-gray-800 p-4 rounded-lg space-y-3">
-          <h2 className="font-semibold text-lg">
-            Step 1: Scan to open Edenred
-          </h2>
-          <p className="text-sm text-gray-300">
-            Scan the QR code below with your phone camera to open Edenred. If
-            the app is installed, it may open automatically.
-          </p>
-          <div className="flex justify-center">
-            <img
-              src={qrBase64}
-              alt="Edenred QR"
-              className="w-48 h-48 border rounded"
-            />
-          </div>
-          <p className="text-sm text-gray-300">
-            Or open Edenred manually and search for{" "}
-            <strong className="text-white">Taprobane Entertainment</strong>.
-          </p>
-        </div>
+        {/* ⭐ CONDITIONAL PAYMENT INSTRUCTIONS */}
+        {order.paymentMethod === "edenred" && (
+          <div className="space-y-6">
+            {/* Step 1 - Edenred */}
+            <div className="bg-gray-800 p-4 rounded-lg space-y-3">
+              <h2 className="font-semibold text-lg">
+                Step 1: Scan to open Edenred
+              </h2>
+              <p className="text-sm text-gray-300">
+                Scan the QR code below with your phone camera to open Edenred.
+                If the app is installed, it may open automatically.
+              </p>
 
-        {/* Step 2 */}
+              <div className="flex justify-center">
+                <img
+                  src={qrBase64!}
+                  alt="Edenred QR"
+                  className="w-48 h-48 border rounded"
+                />
+              </div>
+
+              <p className="text-sm text-gray-300">
+                Or open Edenred manually and search for{" "}
+                <strong className="text-white">Taprobane Entertainment</strong>.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {order.paymentMethod === "epassi" && (
+          <div className="space-y-6">
+            {/* Step 1 - ePassi */}
+            <div className="bg-gray-800 p-4 rounded-lg space-y-3">
+              <h2 className="font-semibold text-lg">Step 1: Open ePassi</h2>
+              <p className="text-sm text-gray-300">
+                Open the ePassi app on your phone and search for{" "}
+                <strong className="text-white">Taprobane Entertainment</strong>.
+              </p>
+              <p className="text-sm text-gray-300">
+                Select the correct amount and complete the payment.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2 - Shared for both Edenred & ePassi */}
         <div className="bg-gray-800 p-4 rounded-lg space-y-3">
           <h2 className="font-semibold text-lg">
             Step 2: Send Screenshot via WhatsApp

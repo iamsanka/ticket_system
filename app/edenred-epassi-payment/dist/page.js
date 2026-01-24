@@ -39,10 +39,10 @@ exports.__esModule = true;
 var prisma_1 = require("@/lib/prisma");
 var navigation_1 = require("next/navigation");
 var generateQr_1 = require("@/lib/generateQr");
-function EdenredPage(_a) {
+function EdenredEpassiPage(_a) {
     var searchParams = _a.searchParams;
     return __awaiter(this, void 0, void 0, function () {
-        var orderId, order, totalEuro, eventTitle, eventDate, edenredUrl, qrBuffer, qrBase64;
+        var orderId, order, totalEuro, eventTitle, eventDate, qrBase64, edenredUrl, qrBuffer;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0: return [4 /*yield*/, searchParams];
@@ -54,6 +54,7 @@ function EdenredPage(_a) {
                             where: { id: orderId },
                             select: {
                                 totalAmount: true,
+                                paymentMethod: true,
                                 event: {
                                     select: {
                                         title: true,
@@ -69,6 +70,8 @@ function EdenredPage(_a) {
                     totalEuro = (order.totalAmount / 100).toFixed(2);
                     eventTitle = order.event.title;
                     eventDate = new Date(order.event.date).toLocaleDateString("fi-FI");
+                    qrBase64 = null;
+                    if (!(order.paymentMethod === "edenred")) return [3 /*break*/, 4];
                     edenredUrl = process.env.EDENRED_PAYMENT_URL;
                     if (!edenredUrl)
                         throw new Error("Missing EDENRED_PAYMENT_URL in .env");
@@ -76,17 +79,19 @@ function EdenredPage(_a) {
                 case 3:
                     qrBuffer = _b.sent();
                     qrBase64 = "data:image/png;base64," + qrBuffer.toString("base64");
-                    return [2 /*return*/, (React.createElement("div", { className: "min-h-screen bg-gray-900 text-white p-6" },
-                            React.createElement("div", { className: "max-w-xl mx-auto space-y-8" },
-                                React.createElement("h1", { className: "text-2xl font-bold text-center" }, "Complete Your Payment"),
-                                React.createElement("div", { className: "bg-gray-800 border border-gray-700 p-4 rounded text-lg font-semibold text-center" },
-                                    "Total to Pay: ",
-                                    React.createElement("span", { className: "text-yellow-400" },
-                                        "\u20AC",
-                                        totalEuro)),
-                                React.createElement("div", { className: "text-center text-sm text-gray-400" },
-                                    React.createElement("p", null, eventTitle),
-                                    React.createElement("p", null, eventDate)),
+                    _b.label = 4;
+                case 4: return [2 /*return*/, (React.createElement("div", { className: "min-h-screen bg-gray-900 text-white p-6" },
+                        React.createElement("div", { className: "max-w-xl mx-auto space-y-8" },
+                            React.createElement("h1", { className: "text-2xl font-bold text-center" }, "Complete Your Payment"),
+                            React.createElement("div", { className: "bg-gray-800 border border-gray-700 p-4 rounded text-lg font-semibold text-center" },
+                                "Total to Pay: ",
+                                React.createElement("span", { className: "text-yellow-400" },
+                                    "\u20AC",
+                                    totalEuro)),
+                            React.createElement("div", { className: "text-center text-sm text-gray-400" },
+                                React.createElement("p", null, eventTitle),
+                                React.createElement("p", null, eventDate)),
+                            order.paymentMethod === "edenred" && (React.createElement("div", { className: "space-y-6" },
                                 React.createElement("div", { className: "bg-gray-800 p-4 rounded-lg space-y-3" },
                                     React.createElement("h2", { className: "font-semibold text-lg" }, "Step 1: Scan to open Edenred"),
                                     React.createElement("p", { className: "text-sm text-gray-300" }, "Scan the QR code below with your phone camera to open Edenred. If the app is installed, it may open automatically."),
@@ -96,17 +101,26 @@ function EdenredPage(_a) {
                                         "Or open Edenred manually and search for",
                                         " ",
                                         React.createElement("strong", { className: "text-white" }, "Taprobane Entertainment"),
-                                        ".")),
+                                        ".")))),
+                            order.paymentMethod === "epassi" && (React.createElement("div", { className: "space-y-6" },
                                 React.createElement("div", { className: "bg-gray-800 p-4 rounded-lg space-y-3" },
-                                    React.createElement("h2", { className: "font-semibold text-lg" }, "Step 2: Send Screenshot via WhatsApp"),
-                                    React.createElement("a", { href: "https://wa.me/358442363616", className: "block bg-green-600 text-white p-3 rounded text-center font-semibold" }, "Send to WhatsApp (+358 44 236 3616)"),
-                                    React.createElement("a", { href: "https://wa.me/358442363618", className: "block bg-green-600 text-white p-3 rounded text-center font-semibold" }, "Send to WhatsApp (+358 44 236 3618)")),
-                                React.createElement("div", { className: "bg-gray-800 p-4 rounded-lg space-y-3" },
-                                    React.createElement("h2", { className: "font-semibold text-lg" }, "Step 3: Continue"),
-                                    React.createElement("p", { className: "text-sm text-gray-300" }, "After sending the screenshot, click continue. We will verify your payment and send your tickets."),
-                                    React.createElement("a", { href: "/thank-you", className: "block bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-3 rounded text-center" }, "Continue")))))];
+                                    React.createElement("h2", { className: "font-semibold text-lg" }, "Step 1: Open ePassi"),
+                                    React.createElement("p", { className: "text-sm text-gray-300" },
+                                        "Open the ePassi app on your phone and search for",
+                                        " ",
+                                        React.createElement("strong", { className: "text-white" }, "Taprobane Entertainment"),
+                                        "."),
+                                    React.createElement("p", { className: "text-sm text-gray-300" }, "Select the correct amount and complete the payment.")))),
+                            React.createElement("div", { className: "bg-gray-800 p-4 rounded-lg space-y-3" },
+                                React.createElement("h2", { className: "font-semibold text-lg" }, "Step 2: Send Screenshot via WhatsApp"),
+                                React.createElement("a", { href: "https://wa.me/358442363616", className: "block bg-green-600 text-white p-3 rounded text-center font-semibold" }, "Send to WhatsApp (+358 44 236 3616)"),
+                                React.createElement("a", { href: "https://wa.me/358442363618", className: "block bg-green-600 text-white p-3 rounded text-center font-semibold" }, "Send to WhatsApp (+358 44 236 3618)")),
+                            React.createElement("div", { className: "bg-gray-800 p-4 rounded-lg space-y-3" },
+                                React.createElement("h2", { className: "font-semibold text-lg" }, "Step 3: Continue"),
+                                React.createElement("p", { className: "text-sm text-gray-300" }, "After sending the screenshot, click continue. We will verify your payment and send your tickets."),
+                                React.createElement("a", { href: "/thank-you", className: "block bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-3 rounded text-center" }, "Continue")))))];
             }
         });
     });
 }
-exports["default"] = EdenredPage;
+exports["default"] = EdenredEpassiPage;
