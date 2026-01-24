@@ -37,14 +37,26 @@ export default function AdminOrdersPage() {
     }
   }
 
+  // CLEANUP OLD UNPAID ORDERS
+  async function cleanupOldOrders() {
+    try {
+      await fetch("/api/admin/orders/cleanup");
+    } catch (err) {
+      console.error("Cleanup failed", err);
+    }
+  }
+
   useEffect(() => {
     fetchSummary();
+    cleanupOldOrders(); // run cleanup on page load
   }, []);
 
   // SEARCH ORDERS (with pagination)
   async function handleSearch(e?: React.FormEvent) {
     if (e) e.preventDefault();
     setLoading(true);
+
+    await cleanupOldOrders(); // cleanup before search
 
     const res = await fetch("/api/admin/orders/search", {
       method: "POST",
