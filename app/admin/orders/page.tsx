@@ -8,13 +8,14 @@ export default function AdminOrdersPage() {
     email: "",
     ticketCode: "",
     paid: "",
+    paymentMethod: "",
     note: "",
   });
 
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Summary calculation
+  // SUMMARY CALCULATION
   function getSummary() {
     const summary = {
       adultLounge: { paid: 0, unpaid: 0 },
@@ -49,7 +50,7 @@ export default function AdminOrdersPage() {
 
   const summary = getSummary();
 
-  // Search orders
+  // SEARCH ORDERS
   async function handleSearch(e?: React.FormEvent) {
     if (e) e.preventDefault();
     setLoading(true);
@@ -65,7 +66,7 @@ export default function AdminOrdersPage() {
     setLoading(false);
   }
 
-  // Mark as paid
+  // MARK AS PAID
   async function markAsPaid(orderId: string) {
     try {
       const res = await fetch("/api/admin/orders/mark-paid", {
@@ -75,7 +76,6 @@ export default function AdminOrdersPage() {
       });
 
       const data = await res.json();
-      console.log("MarkPaid response:", data);
 
       if (data.ok) {
         alert(data.message || "Order marked as paid and email sent");
@@ -97,7 +97,7 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // Resend email
+  // RESEND EMAIL
   async function resendEmail(orderId: string) {
     const res = await fetch("/api/admin/orders/resend-email", {
       method: "POST",
@@ -110,6 +110,39 @@ export default function AdminOrdersPage() {
       alert("Email resent successfully");
     } else {
       alert(data.error || "Failed to resend email");
+    }
+  }
+
+  // DELETE ORDER (UNPAID ONLY)
+  async function deleteOrder(orderId: string) {
+    if (!confirm("Are you sure you want to delete this unpaid order?")) return;
+
+    try {
+      const res = await fetch("/api/admin/orders/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Order deleted successfully");
+
+        const refreshed = await fetch("/api/admin/orders/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
+
+        const updated = await refreshed.json();
+        setOrders(updated.orders || []);
+      } else {
+        alert(data.error || "Failed to delete order");
+      }
+    } catch (err) {
+      console.error("DeleteOrder exception:", err);
+      alert("Unexpected error while deleting order");
     }
   }
 
@@ -199,6 +232,17 @@ export default function AdminOrdersPage() {
           <option value="false">Unpaid</option>
         </select>
 
+        <select
+          value={form.paymentMethod}
+          onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
+          className="border p-2 w-full rounded text-black"
+        >
+          <option value="">All Payment Methods</option>
+          <option value="stripe">Card / Klarna</option>
+          <option value="edenred">Edenred</option>
+          <option value="epassi">ePassi</option>
+        </select>
+
         <button
           type="submit"
           disabled={loading}
@@ -269,6 +313,18 @@ export default function AdminOrdersPage() {
                 <p>
                   <strong>Paid:</strong> {order.paid ? "TRUE" : "FALSE"}
                 </p>
+
+                <p>
+                  <strong>Payment Method:</strong>{" "}
+                  {order.paymentMethod === "stripe"
+                    ? "Card / Klarna"
+                    : order.paymentMethod === "edenred"
+                      ? "Edenred"
+                      : order.paymentMethod === "epassi"
+                        ? "ePassi"
+                        : order.paymentMethod}
+                </p>
+
                 <p>
                   <strong>Note:</strong> {order.receiptNote || "—"}
                 </p>
@@ -293,12 +349,21 @@ export default function AdminOrdersPage() {
                       Already Paid
                     </button>
                   ) : (
-                    <button
-                      onClick={() => markAsPaid(order.id)}
-                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-                    >
-                      Mark as Paid
-                    </button>
+                    <>
+                      <button
+                        onClick={() => markAsPaid(order.id)}
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+                      >
+                        Mark as Paid
+                      </button>
+
+                      <button
+                        onClick={() => deleteOrder(order.id)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+                      >
+                        Delete Order
+                      </button>
+                    </>
                   )}
 
                   <button

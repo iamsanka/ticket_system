@@ -41,14 +41,14 @@ var server_1 = require("next/server");
 var prisma_1 = require("@/lib/prisma");
 function POST(req) {
     return __awaiter(this, void 0, void 0, function () {
-        var _a, contactNo, email, ticketCode, status, paid, note, _b, page, _c, pageSize, skip, take, where, ticket, order, _d, orders, total, error_1;
+        var _a, contactNo, email, ticketCode, status, paid, note, paymentMethod, _b, page, _c, pageSize, skip, take, where, ticket, order, _d, orders, total, error_1;
         return __generator(this, function (_e) {
             switch (_e.label) {
                 case 0:
                     _e.trys.push([0, 7, , 8]);
                     return [4 /*yield*/, req.json()];
                 case 1:
-                    _a = _e.sent(), contactNo = _a.contactNo, email = _a.email, ticketCode = _a.ticketCode, status = _a.status, paid = _a.paid, note = _a.note, _b = _a.page, page = _b === void 0 ? 1 : _b, _c = _a.pageSize, pageSize = _c === void 0 ? 10 : _c;
+                    _a = _e.sent(), contactNo = _a.contactNo, email = _a.email, ticketCode = _a.ticketCode, status = _a.status, paid = _a.paid, note = _a.note, paymentMethod = _a.paymentMethod, _b = _a.page, page = _b === void 0 ? 1 : _b, _c = _a.pageSize, pageSize = _c === void 0 ? 10 : _c;
                     skip = (Number(page) - 1) * Number(pageSize);
                     take = Number(pageSize);
                     where = {};
@@ -105,6 +105,10 @@ function POST(req) {
                     }
                     else if (paid === "false") {
                         where.paid = false;
+                    }
+                    // ⭐ PAYMENT METHOD FILTER
+                    if (paymentMethod === null || paymentMethod === void 0 ? void 0 : paymentMethod.trim()) {
+                        where.paymentMethod = paymentMethod.trim();
                     }
                     // NOTE SEARCH
                     if (note === null || note === void 0 ? void 0 : note.trim()) {
