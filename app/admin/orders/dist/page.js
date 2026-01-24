@@ -89,8 +89,30 @@ function AdminOrdersPage() {
             });
         });
     }
+    // CLEANUP OLD UNPAID ORDERS
+    function cleanupOldOrders() {
+        return __awaiter(this, void 0, void 0, function () {
+            var err_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, fetch("/api/admin/orders/cleanup")];
+                    case 1:
+                        _a.sent();
+                        return [3 /*break*/, 3];
+                    case 2:
+                        err_2 = _a.sent();
+                        console.error("Cleanup failed", err_2);
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    }
     react_1.useEffect(function () {
         fetchSummary();
+        cleanupOldOrders(); // run cleanup on page load
     }, []);
     // SEARCH ORDERS (with pagination)
     function handleSearch(e) {
@@ -102,15 +124,18 @@ function AdminOrdersPage() {
                         if (e)
                             e.preventDefault();
                         setLoading(true);
+                        return [4 /*yield*/, cleanupOldOrders()];
+                    case 1:
+                        _a.sent(); // cleanup before search
                         return [4 /*yield*/, fetch("/api/admin/orders/search", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify(__assign(__assign({}, form), { page: page }))
                             })];
-                    case 1:
+                    case 2:
                         res = _a.sent();
                         return [4 /*yield*/, res.json()];
-                    case 2:
+                    case 3:
                         data = _a.sent();
                         setOrders(data.orders || []);
                         setTotalPages(data.totalPages || 1);
@@ -123,7 +148,7 @@ function AdminOrdersPage() {
     // MARK AS PAID
     function markAsPaid(orderId) {
         return __awaiter(this, void 0, void 0, function () {
-            var res, data, err_2;
+            var res, data, err_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -148,8 +173,8 @@ function AdminOrdersPage() {
                         }
                         return [3 /*break*/, 4];
                     case 3:
-                        err_2 = _a.sent();
-                        console.error("MarkPaid exception:", err_2);
+                        err_3 = _a.sent();
+                        console.error("MarkPaid exception:", err_3);
                         alert("Unexpected error while marking as paid");
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/];
@@ -187,7 +212,7 @@ function AdminOrdersPage() {
     // DELETE ORDER (UNPAID ONLY)
     function deleteOrder(orderId) {
         return __awaiter(this, void 0, void 0, function () {
-            var res, data, err_3;
+            var res, data, err_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -216,8 +241,8 @@ function AdminOrdersPage() {
                         }
                         return [3 /*break*/, 5];
                     case 4:
-                        err_3 = _a.sent();
-                        console.error("DeleteOrder exception:", err_3);
+                        err_4 = _a.sent();
+                        console.error("DeleteOrder exception:", err_4);
                         alert("Unexpected error while deleting order");
                         return [3 /*break*/, 5];
                     case 5: return [2 /*return*/];
