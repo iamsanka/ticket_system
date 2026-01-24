@@ -46,21 +46,31 @@ export default function AdminOrdersPage() {
     }
   }
 
+  // INITIAL LOAD
   useEffect(() => {
     fetchSummary();
-    cleanupOldOrders(); // run cleanup on page load
+    cleanupOldOrders();
   }, []);
 
+  // WHEN PAGE CHANGES → RUN SEARCH + SCROLL TO TOP
   useEffect(() => {
     handleSearch();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [page]);
 
   // SEARCH ORDERS (with pagination)
   async function handleSearch(e?: React.FormEvent) {
     if (e) e.preventDefault();
+
+    // Reset to page 1 when a new search is triggered
+    if (page !== 1 && e) {
+      setPage(1);
+      return; // useEffect([page]) will trigger handleSearch again
+    }
+
     setLoading(true);
 
-    await cleanupOldOrders(); // cleanup before search
+    await cleanupOldOrders();
 
     const res = await fetch("/api/admin/orders/search", {
       method: "POST",

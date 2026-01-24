@@ -110,12 +110,15 @@ function AdminOrdersPage() {
             });
         });
     }
+    // INITIAL LOAD
     react_1.useEffect(function () {
         fetchSummary();
-        cleanupOldOrders(); // run cleanup on page load
+        cleanupOldOrders();
     }, []);
+    // WHEN PAGE CHANGES → RUN SEARCH + SCROLL TO TOP
     react_1.useEffect(function () {
         handleSearch();
+        window.scrollTo({ top: 0, behavior: "smooth" });
     }, [page]);
     // SEARCH ORDERS (with pagination)
     function handleSearch(e) {
@@ -126,10 +129,15 @@ function AdminOrdersPage() {
                     case 0:
                         if (e)
                             e.preventDefault();
+                        // Reset to page 1 when a new search is triggered
+                        if (page !== 1 && e) {
+                            setPage(1);
+                            return [2 /*return*/]; // useEffect([page]) will trigger handleSearch again
+                        }
                         setLoading(true);
                         return [4 /*yield*/, cleanupOldOrders()];
                     case 1:
-                        _a.sent(); // cleanup before search
+                        _a.sent();
                         return [4 /*yield*/, fetch("/api/admin/orders/search", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
