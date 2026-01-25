@@ -1,14 +1,26 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function StaffDashboard() {
   const router = useRouter();
 
   function logout() {
+    // Clear session cookie
     document.cookie = "admin_session=; Max-Age=0; path=/;";
+
+    // Optional: show toast (if you use a toast system)
+    // toast.success("Logged out successfully");
+
+    // Redirect to login
     router.push("/admin/login");
   }
+
+  // Scroll to top on load (optional UX polish)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   return (
     <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6">

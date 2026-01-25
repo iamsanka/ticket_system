@@ -9,7 +9,7 @@ export function proxy(req: NextRequest) {
   // -----------------------------
   const maintenance = process.env.MAINTENANCE_MODE === "true";
 
-  // Allow admin to bypass maintenance (optional)
+  // Allow admin routes to bypass maintenance
   const isAdminRoute = path.startsWith("/admin");
 
   if (maintenance && !isAdminRoute) {
@@ -32,41 +32,76 @@ export function proxy(req: NextRequest) {
   }
 
   // -----------------------------
-  // 2. ADMIN AUTH LOGIC (unchanged)
+  // 2. ALLOW ALL API ROUTES TO PASS
   // -----------------------------
-
-  // Allow API routes to pass through (critical for login to work)
-  if (path.startsWith("/api/admin")) {
+  if (path.startsWith("/api")) {
     return NextResponse.next();
   }
 
-  // Read the correct cookie (only ONE cookie name)
-  const session = req.cookies.get("admin_session_v2")?.value;
-  const isLoggedIn = session === "true";
+  // -----------------------------
+  // 3. READ AUTH SESSION COOKIE
+  // -----------------------------
+  const rawSession = req.cookies.get("admin_session")?.value;
 
-  // Define protected routes
+  let role: string | null = null;
+
+  if (rawSession) {
+    try {
+      const parsed = JSON.parse(rawSession);
+      role = parsed.role;
+    } catch {
+      role = null;
+    }
+  }
+
   const isLoginPage = path === "/admin/login";
-  const isAdminPage = path === "/admin" || path.startsWith("/admin/");
+  const isAdminPage = path.startsWith("/admin");
 
-  // Redirect unauthenticated users away from admin pages
-  if (!isLoggedIn && isAdminPage && !isLoginPage) {
+  // -----------------------------
+  // 4. IF NOT LOGGED IN → REDIRECT
+  // -----------------------------
+  if (!role && isAdminPage && !isLoginPage) {
     return NextResponse.redirect(new URL("/admin/login", req.url));
   }
 
-  // Redirect logged-in users away from login page
-  if (isLoggedIn && isLoginPage) {
-    return NextResponse.redirect(new URL("/admin", req.url));
+  // -----------------------------
+  // 5. IF LOGGED IN → REDIRECT AWAY FROM LOGIN
+  // -----------------------------
+  if (role && isLoginPage) {
+    if (role === "ADMIN") return NextResponse.redirect(new URL("/admin", req.url));
+    if (role === "STAFF") return NextResponse.redirect(new URL("/admin/scanner", req.url));
+    if (role === "AUDIT") return NextResponse.redirect(new URL("/admin/audit", req.url));
+  }
+
+  // -----------------------------
+  // 6. ROLE-BASED ACCESS CONTROL
+  // -----------------------------
+
+  // ADMIN ONLY
+  const adminOnlyRoutes = ["/admin", "/admin/orders", "/admin/checkin"];
+  if (adminOnlyRoutes.includes(path) && role !== "ADMIN") {
+    return NextResponse.redirect(new URL("/admin/login", req.url));
+  }
+
+  // STAFF + ADMIN
+  if (path === "/admin/scanner" && !["ADMIN", "STAFF"].includes(role || "")) {
+    return NextResponse.redirect(new URL("/admin/login", req.url));
+  }
+
+  // AUDIT ONLY
+  if (path === "/admin/audit" && role !== "AUDIT") {
+    return NextResponse.redirect(new URL("/admin/login", req.url));
   }
 
   // Debug
-  console.log("PROXY RUNNING:", path, "SESSION:", session);
+  console.log("PROXY:", path, "ROLE:", role);
 
   return NextResponse.next();
 }
 
 // -----------------------------
-// 3. MATCH ALL ROUTES
+// 7. MATCH ALL ROUTES
 // -----------------------------
 export const config = {
-  matcher: ["/:path*"], // apply proxy to the entire site
+  matcher: ["/:path*"],
 };
