@@ -19,7 +19,6 @@ model Event {
   date      DateTime
   venue     String
 
-  // Prices for each category + tier
   adultLoungePrice    Int
   adultStandardPrice  Int
   childLoungePrice    Int
@@ -41,21 +40,15 @@ model Order {
   id        String   @id @default(cuid())
   eventId   String
 
-  // Quantities for each ticket type
   adultLounge   Int @default(0)
   adultStandard Int @default(0)
   childLounge   Int @default(0)
   childStandard Int @default(0)
 
   totalAmount  Int
-
-  // Generic service fee (Edenred, ePassi, etc.)
   serviceFee   Int? @default(0)
 
-  // Stripe webhook confirmation
   paid        Boolean  @default(false)
-
-  // Optional: still useful for admin dashboards
   status      String   @default("pending")
 
   createdAt   DateTime @default(now())
@@ -64,15 +57,11 @@ model Order {
   contactNo   String?
   name        String?
 
-  // Payment method: stripe, edenred, epassi
   paymentMethod String?
+  ticketSent    Boolean @default(false)
 
-  // Prevent duplicate email sends
-  ticketSent  Boolean @default(false)
-
-  // ⭐ NEW: Admin verification fields
-  receiptUrl  String?   // uploaded screenshot
-  receiptNote String?   // admin notes or Edenred reference
+  receiptUrl    String?
+  receiptNote   String?
 
   event       Event    @relation(fields: [eventId], references: [id])
   tickets     Ticket[]
@@ -98,11 +87,8 @@ model Ticket {
   category  TicketCategory
   tier      TicketTier
 
-  // Human-readable ticket code
   ticketCode String? @unique
-
-  // QR code payload
-  qrCode    String
+  qrCode     String
 
   usedAt    DateTime?
   createdAt DateTime @default(now())
@@ -125,15 +111,21 @@ enum TicketTier {
 
 //
 // ─────────────────────────────────────────────
-//   USER MODEL
+//   USER MODEL (SAFE ROLE UPDATE)
 // ─────────────────────────────────────────────
 //
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String    @id @default(cuid())
+  email     String    @unique
   password  String
   name      String?
-  role      String   @default("admin")
-  createdAt DateTime @default(now())
+  role      UserRole  @default(ADMIN)
+  createdAt DateTime  @default(now())
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+  AUDIT
 }

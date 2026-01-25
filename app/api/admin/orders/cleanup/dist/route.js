@@ -41,12 +41,13 @@ var server_1 = require("next/server");
 var prisma_1 = require("@/lib/prisma");
 function GET() {
     return __awaiter(this, void 0, void 0, function () {
-        var THIRTY_MINUTES, oldOrders, deletableOrders, orderIds, result, error_1;
+        var THIRTY_MINUTES, FIVE_DAYS, stripeOrders, stripeDeletable, voucherOrders, voucherDeletable, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 3, , 4]);
+                    _a.trys.push([0, 7, , 8]);
                     THIRTY_MINUTES = 30 * 60 * 1000;
+                    FIVE_DAYS = 5 * 24 * 60 * 60 * 1000;
                     return [4 /*yield*/, prisma_1.prisma.order.findMany({
                             where: {
                                 paid: false,
@@ -55,33 +56,52 @@ function GET() {
                                     lt: new Date(Date.now() - THIRTY_MINUTES)
                                 }
                             },
-                            include: {
-                                tickets: true
-                            }
+                            include: { tickets: true }
                         })];
                 case 1:
-                    oldOrders = _a.sent();
-                    deletableOrders = oldOrders.filter(function (o) { return o.tickets.length === 0; });
-                    if (deletableOrders.length === 0) {
-                        return [2 /*return*/, server_1.NextResponse.json({ ok: true, deleted: 0 })];
-                    }
-                    orderIds = deletableOrders.map(function (o) { return o.id; });
+                    stripeOrders = _a.sent();
+                    stripeDeletable = stripeOrders
+                        .filter(function (o) { return o.tickets.length === 0; })
+                        .map(function (o) { return o.id; });
+                    if (!(stripeDeletable.length > 0)) return [3 /*break*/, 3];
                     return [4 /*yield*/, prisma_1.prisma.order.deleteMany({
-                            where: {
-                                id: { "in": orderIds }
-                            }
+                            where: { id: { "in": stripeDeletable } }
                         })];
                 case 2:
-                    result = _a.sent();
-                    return [2 /*return*/, server_1.NextResponse.json({
-                            ok: true,
-                            deleted: result.count
+                    _a.sent();
+                    _a.label = 3;
+                case 3: return [4 /*yield*/, prisma_1.prisma.order.findMany({
+                        where: {
+                            paid: false,
+                            paymentMethod: { "in": ["edenred", "epassi"] },
+                            createdAt: {
+                                lt: new Date(Date.now() - FIVE_DAYS)
+                            }
+                        },
+                        include: { tickets: true }
+                    })];
+                case 4:
+                    voucherOrders = _a.sent();
+                    voucherDeletable = voucherOrders
+                        .filter(function (o) { return o.tickets.length === 0; })
+                        .map(function (o) { return o.id; });
+                    if (!(voucherDeletable.length > 0)) return [3 /*break*/, 6];
+                    return [4 /*yield*/, prisma_1.prisma.order.deleteMany({
+                            where: { id: { "in": voucherDeletable } }
                         })];
-                case 3:
+                case 5:
+                    _a.sent();
+                    _a.label = 6;
+                case 6: return [2 /*return*/, server_1.NextResponse.json({
+                        ok: true,
+                        deletedStripe: stripeDeletable.length,
+                        deletedVoucher: voucherDeletable.length
+                    })];
+                case 7:
                     error_1 = _a.sent();
                     console.error("Cleanup error:", error_1);
                     return [2 /*return*/, server_1.NextResponse.json({ ok: false, error: "Cleanup failed" }, { status: 500 })];
-                case 4: return [2 /*return*/];
+                case 8: return [2 /*return*/];
             }
         });
     });

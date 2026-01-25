@@ -4,40 +4,56 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   try {
     const THIRTY_MINUTES = 30 * 60 * 1000;
+    const FIVE_DAYS = 5 * 24 * 60 * 60 * 1000;
 
-    // 1️⃣ Find unpaid STRIPE orders older than 30 minutes with NO tickets
-    const oldOrders = await prisma.order.findMany({
+    // 1️⃣ STRIPE CLEANUP (30 minutes)
+    const stripeOrders = await prisma.order.findMany({
       where: {
         paid: false,
-        paymentMethod: "stripe", // only card/klarna
+        paymentMethod: "stripe",
         createdAt: {
           lt: new Date(Date.now() - THIRTY_MINUTES),
         },
       },
-      include: {
-        tickets: true,
-      },
+      include: { tickets: true },
     });
 
-    // Filter out orders that already have tickets
-    const deletableOrders = oldOrders.filter((o) => o.tickets.length === 0);
+    const stripeDeletable = stripeOrders
+      .filter((o) => o.tickets.length === 0)
+      .map((o) => o.id);
 
-    if (deletableOrders.length === 0) {
-      return NextResponse.json({ ok: true, deleted: 0 });
+    if (stripeDeletable.length > 0) {
+      await prisma.order.deleteMany({
+        where: { id: { in: stripeDeletable } },
+      });
     }
 
-    const orderIds = deletableOrders.map((o) => o.id);
-
-    // 2️⃣ Delete the orders (no tickets exist, so safe)
-    const result = await prisma.order.deleteMany({
+    // 2️⃣ EDENRED + EPASSI CLEANUP (5 days)
+    const voucherOrders = await prisma.order.findMany({
       where: {
-        id: { in: orderIds },
+        paid: false,
+        paymentMethod: { in: ["edenred", "epassi"] },
+        createdAt: {
+          lt: new Date(Date.now() - FIVE_DAYS),
+        },
       },
+      include: { tickets: true },
     });
+
+    const voucherDeletable = voucherOrders
+      .filter((o) => o.tickets.length === 0)
+      .map((o) => o.id);
+
+    if (voucherDeletable.length > 0) {
+      await prisma.order.deleteMany({
+        where: { id: { in: voucherDeletable } },
+      });
+    }
 
     return NextResponse.json({
       ok: true,
-      deleted: result.count,
+      deletedStripe: stripeDeletable.length,
+      deletedVoucher: voucherDeletable.length,
     });
   } catch (error) {
     console.error("Cleanup error:", error);
