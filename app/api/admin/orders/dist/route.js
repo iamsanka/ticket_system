@@ -60,6 +60,7 @@ function GET(req) {
                             orderBy: { createdAt: "asc" },
                             select: {
                                 id: true,
+                                createdAt: true,
                                 name: true,
                                 email: true,
                                 contactNo: true,

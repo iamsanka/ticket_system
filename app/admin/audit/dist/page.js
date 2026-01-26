@@ -55,7 +55,10 @@ function AuditDashboard() {
     var router = navigation_1.useRouter();
     var _a = react_1.useState(null), role = _a[0], setRole = _a[1];
     var _b = react_1.useState(null), tickets = _b[0], setTickets = _b[1];
-    var _c = react_1.useState(true), loading = _c[0], setLoading = _c[1];
+    var _c = react_1.useState(null), filtered = _c[0], setFiltered = _c[1];
+    var _d = react_1.useState(true), loading = _d[0], setLoading = _d[1];
+    var _e = react_1.useState(""), fromDate = _e[0], setFromDate = _e[1];
+    var _f = react_1.useState(""), toDate = _f[0], setToDate = _f[1];
     react_1.useEffect(function () {
         function load() {
             var _a;
@@ -83,18 +86,17 @@ function AuditDashboard() {
                             return [4 /*yield*/, orderRes.text()];
                         case 4:
                             text = _b.sent();
-                            console.log("RAW /api/admin/orders RESPONSE:", text);
                             orderData = void 0;
                             try {
                                 orderData = JSON.parse(text);
                             }
                             catch (_c) {
-                                console.error("JSON parse failed — response was not JSON");
+                                console.error("JSON parse failed");
                                 setLoading(false);
                                 return [2 /*return*/];
                             }
                             if (!orderData.orders) {
-                                console.error("No orders field in response");
+                                console.error("No orders found");
                                 setLoading(false);
                                 return [2 /*return*/];
                             }
@@ -102,6 +104,7 @@ function AuditDashboard() {
                                 return order.tickets.map(function (ticket) { return (__assign(__assign({}, ticket), { order: order })); });
                             });
                             setTickets(allTickets);
+                            setFiltered(allTickets);
                             return [3 /*break*/, 7];
                         case 5:
                             err_1 = _b.sent();
@@ -117,6 +120,21 @@ function AuditDashboard() {
         }
         load();
     }, []);
+    react_1.useEffect(function () {
+        if (!tickets)
+            return;
+        var from = fromDate ? new Date(fromDate) : null;
+        var to = toDate ? new Date(toDate) : null;
+        var filteredTickets = tickets.filter(function (t) {
+            var created = new Date(t.order.createdAt);
+            if (from && created < from)
+                return false;
+            if (to && created > to)
+                return false;
+            return true;
+        });
+        setFiltered(filteredTickets);
+    }, [fromDate, toDate, tickets]);
     function logout() {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -130,15 +148,23 @@ function AuditDashboard() {
             });
         });
     }
-    if (loading || role === null || tickets === null) {
+    if (loading || role === null || tickets === null || filtered === null) {
         return (React.createElement("main", { className: "min-h-screen bg-black text-white flex items-center justify-center" },
             React.createElement("p", { className: "text-xl" }, "Loading audit view\u2026")));
     }
-    // Role gate: only ADMIN + AUDIT should see this page
     if (role !== "ADMIN" && role !== "AUDIT") {
         return (React.createElement("main", { className: "min-h-screen bg-black text-white flex items-center justify-center" },
             React.createElement("p", { className: "text-xl" }, "Access denied.")));
     }
-    return React.createElement(AuditClient_1["default"], { tickets: tickets, role: role, logout: logout });
+    return (React.createElement("main", { className: "min-h-screen bg-black text-white p-8" },
+        role === "ADMIN" && (React.createElement("button", { onClick: function () { return router.push("/admin"); }, className: "mb-6 px-4 py-2 bg-yellow-400 text-black font-semibold rounded hover:bg-yellow-300 transition" }, "\u2190 Back to Dashboard")),
+        React.createElement("h1", { className: "text-3xl font-bold mb-6" }, "Audit Dashboard"),
+        React.createElement("form", { onSubmit: function (e) { return e.preventDefault(); }, className: "flex flex-wrap gap-4 mb-6 items-center" },
+            React.createElement("label", { className: "text-white font-medium" }, "From:"),
+            React.createElement("input", { type: "date", value: fromDate, onChange: function (e) { return setFromDate(e.target.value); }, className: "p-2 rounded bg-white text-black border border-gray-300" }),
+            React.createElement("label", { className: "text-white font-medium" }, "To:"),
+            React.createElement("input", { type: "date", value: toDate, onChange: function (e) { return setToDate(e.target.value); }, className: "p-2 rounded bg-white text-black border border-gray-300" }),
+            React.createElement("button", { type: "submit", className: "px-4 py-2 bg-blue-600 text-white rounded font-semibold hover:bg-blue-700 transition" }, "Search")),
+        React.createElement(AuditClient_1["default"], { tickets: filtered, role: role, logout: logout })));
 }
 exports["default"] = AuditDashboard;

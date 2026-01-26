@@ -23,9 +23,17 @@ export default function AuditClient({
       grandTotal: 0,
       edenredFees: 0,
       epassiFees: 0,
+      paymentTotals: {
+        stripe: 0,
+        klarna: 0,
+        edenred: 0,
+        epassi: 0,
+      },
     };
 
-    const countedOrders = new Set<string>();
+    const orderTotals: Record<string, number> = {};
+    const serviceFees: Record<string, number> = {};
+    const paymentMethods: Record<string, string> = {};
 
     for (const t of tickets) {
       const key = `${t.category}_${t.tier}` as
@@ -40,7 +48,6 @@ export default function AuditClient({
 
       const event = t.order.event;
       let price = 0;
-
       if (key === "ADULT_LOUNGE") price = event.adultLoungePrice / 100;
       if (key === "ADULT_STANDARD") price = event.adultStandardPrice / 100;
       if (key === "CHILD_LOUNGE") price = event.childLoungePrice / 100;
@@ -49,18 +56,27 @@ export default function AuditClient({
       result[key].total += price;
       result.grandTotal += price;
 
-      // ✅ Only count serviceFee once per order
       const orderId = t.order.id;
-      if (!countedOrders.has(orderId)) {
-        countedOrders.add(orderId);
+      orderTotals[orderId] = (orderTotals[orderId] || 0) + price;
+      paymentMethods[orderId] = t.order.paymentMethod || "";
 
-        if (t.order.paymentMethod === "edenred") {
-          result.edenredFees += t.order.serviceFee / 100;
-        }
-        if (t.order.paymentMethod === "epassi") {
-          result.epassiFees += t.order.serviceFee / 100;
-        }
+      if (!(orderId in serviceFees)) {
+        serviceFees[orderId] = t.order.serviceFee || 0;
       }
+    }
+
+    for (const orderId in orderTotals) {
+      const method = paymentMethods[orderId];
+      const amount = orderTotals[orderId];
+
+      if (method === "stripe") result.paymentTotals.stripe += amount;
+      if (method === "klarna") result.paymentTotals.klarna += amount;
+      if (method === "edenred") result.paymentTotals.edenred += amount;
+      if (method === "epassi") result.paymentTotals.epassi += amount;
+
+      const fee = serviceFees[orderId] / 100;
+      if (method === "edenred") result.edenredFees += fee;
+      if (method === "epassi") result.epassiFees += fee;
     }
 
     return result;
@@ -68,9 +84,7 @@ export default function AuditClient({
 
   return (
     <main className="min-h-screen bg-black text-white p-8">
-      <h1 className="text-3xl font-bold mb-6">Audit Dashboard</h1>
-
-      {/* Role-based buttons */}
+      {/** 
       {role === "ADMIN" && (
         <button
           onClick={() => router.push("/admin")}
@@ -79,20 +93,10 @@ export default function AuditClient({
           ← Back to Dashboard
         </button>
       )}
+      */}
 
-      {role === "AUDIT" && (
-        <button
-          onClick={logout}
-          className="mb-6 px-4 py-2 bg-red-600 text-white font-semibold rounded hover:bg-red-700 transition"
-        >
-          Logout
-        </button>
-      )}
-
-      {/* Ticket Sales Overview */}
+      <h2 className="text-xl font-semibold mb-4">Ticket Sales Overview</h2>
       <section className="bg-gray-900 p-6 rounded-lg shadow-lg mb-8">
-        <h2 className="text-xl font-semibold mb-4">Ticket Sales Overview</h2>
-
         <table className="w-full text-left">
           <thead>
             <tr>
@@ -130,12 +134,55 @@ export default function AuditClient({
         </p>
       </section>
 
-      {/* Payment Fees */}
-      <section className="bg-gray-900 p-6 rounded-lg shadow-lg">
-        <h2 className="text-xl font-semibold mb-4">Payment Fees</h2>
+      <section className="bg-gray-900 p-6 rounded-lg shadow-lg mb-8">
+        <h2 className="text-xl font-semibold mb-4">Service Charges</h2>
         <p>Edenred Fees Total: {summary.edenredFees.toFixed(2)} €</p>
         <p>ePassi Fees Total: {summary.epassiFees.toFixed(2)} €</p>
       </section>
+
+      <section className="bg-gray-900 p-6 rounded-lg shadow-lg">
+        <h2 className="text-xl font-semibold mb-4">
+          Payment Breakdown (without service charges)
+        </h2>
+
+        <table className="w-full text-left">
+          <thead>
+            <tr>
+              <th className="pb-2">Method</th>
+              <th className="pb-2">Total Paid (€)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Stripe</td>
+              <td>{summary.paymentTotals.stripe.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td>Klarna</td>
+              <td>{summary.paymentTotals.klarna.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td>Edenred</td>
+              <td>{summary.paymentTotals.edenred.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td>ePassi</td>
+              <td>{summary.paymentTotals.epassi.toFixed(2)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      {role === "AUDIT" && (
+        <div className="mt-12 flex justify-center">
+          <button
+            onClick={logout}
+            className="px-4 py-2 bg-red-600 text-white font-semibold rounded hover:bg-red-700 transition"
+          >
+            Logout
+          </button>
+        </div>
+      )}
     </main>
   );
 }
