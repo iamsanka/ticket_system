@@ -6,20 +6,19 @@ export async function GET(req: Request) {
   const eventId = searchParams.get("eventId");
   const search = searchParams.get("search") || "";
 
-  if (!eventId) {
-    return NextResponse.json(
-      { error: "Missing eventId" },
-      { status: 400 }
-    );
+  // eventId is optional: if present → filter, if not → all events
+  const where: any = {};
+
+  if (eventId) {
+    where.eventId = eventId;
+  }
+
+  if (search) {
+    where.contactNo = { contains: search, mode: "insensitive" };
   }
 
   const orders = await prisma.order.findMany({
-    where: {
-      eventId,
-      contactNo: search
-        ? { contains: search, mode: "insensitive" }
-        : undefined,
-    },
+    where,
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
@@ -30,8 +29,27 @@ export async function GET(req: Request) {
       adultStandard: true,
       childLounge: true,
       childStandard: true,
+      paymentMethod: true,
+      serviceFee: true,
+      paid: true,
+      event: {
+        select: {
+          id: true,
+          title: true,
+          date: true,
+          venue: true,
+          adultLoungePrice: true,
+          adultStandardPrice: true,
+          childLoungePrice: true,
+          childStandardPrice: true,
+          createdAt: true,
+        },
+      },
       tickets: {
         select: {
+          id: true,
+          category: true, // ADULT / CHILD
+          tier: true,     // LOUNGE / STANDARD
           usedAt: true,
         },
       },

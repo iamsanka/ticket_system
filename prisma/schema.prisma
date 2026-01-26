@@ -111,7 +111,7 @@ enum TicketTier {
 
 //
 // ─────────────────────────────────────────────
-//   USER MODEL (SAFE ROLE UPDATE)
+//   USER MODEL (ROLE-BASED ACCESS)
 // ─────────────────────────────────────────────
 //
 

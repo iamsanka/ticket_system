@@ -3,9 +3,20 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const orders = await prisma.order.findMany({
+    // 1. ALL tickets = paid tickets (tickets only exist after payment)
+    const tickets = await prisma.ticket.findMany({
       select: {
-        paid: true,
+        category: true,
+        tier: true,
+      },
+    });
+
+    // 2. Unpaid quantities from Order table
+    const unpaidOrders = await prisma.order.findMany({
+      where: {
+        paid: false,
+      },
+      select: {
         adultLounge: true,
         adultStandard: true,
         childLounge: true,
@@ -20,13 +31,28 @@ export async function GET() {
       childStandard: { paid: 0, unpaid: 0 },
     };
 
-    for (const order of orders) {
-      const key = order.paid ? "paid" : "unpaid";
+    // PAID = count tickets
+    for (const t of tickets) {
+      if (t.category === "ADULT" && t.tier === "LOUNGE") {
+        summary.adultLounge.paid += 1;
+      }
+      if (t.category === "ADULT" && t.tier === "STANDARD") {
+        summary.adultStandard.paid += 1;
+      }
+      if (t.category === "CHILD" && t.tier === "LOUNGE") {
+        summary.childLounge.paid += 1;
+      }
+      if (t.category === "CHILD" && t.tier === "STANDARD") {
+        summary.childStandard.paid += 1;
+      }
+    }
 
-      summary.adultLounge[key] += order.adultLounge || 0;
-      summary.adultStandard[key] += order.adultStandard || 0;
-      summary.childLounge[key] += order.childLounge || 0;
-      summary.childStandard[key] += order.childStandard || 0;
+    // UNPAID = quantities from unpaid orders
+    for (const order of unpaidOrders) {
+      summary.adultLounge.unpaid += order.adultLounge || 0;
+      summary.adultStandard.unpaid += order.adultStandard || 0;
+      summary.childLounge.unpaid += order.childLounge || 0;
+      summary.childStandard.unpaid += order.childStandard || 0;
     }
 
     return NextResponse.json({ summary });
@@ -34,7 +60,7 @@ export async function GET() {
     console.error("Admin summary error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

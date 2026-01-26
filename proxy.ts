@@ -1,15 +1,43 @@
+// /proxy.ts
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
-export function proxy(req: NextRequest) {
-  const path = req.nextUrl.pathname;
+export default function proxy(request: Request) {
+  const url = new URL(request.url);
+  const path = url.pathname;
+
+  // -----------------------------
+  // 0. IGNORE NEXT.JS INTERNAL ROUTES
+  // -----------------------------
+  if (
+    path.startsWith("/_next") ||
+    path.startsWith("/favicon") ||
+    path.startsWith("/assets") ||
+    path.startsWith("/public")
+  ) {
+    return NextResponse.next();
+  }
+
+  // -----------------------------
+  // 0.5 ALLOW LOGIN PAGE BEFORE ANY COOKIE OR ROLE LOGIC
+  // -----------------------------
+  if (path.startsWith("/admin/login")) {
+    return NextResponse.next();
+  }
+
+  // -----------------------------
+  // DEBUG LOG (ADMIN ROUTES ONLY)
+  // -----------------------------
+  if (path.startsWith("/admin")) {
+    console.log("PATH CHECK:", {
+      path,
+      isAdminPage: true,
+    });
+  }
 
   // -----------------------------
   // 1. GLOBAL MAINTENANCE MODE
   // -----------------------------
   const maintenance = process.env.MAINTENANCE_MODE === "true";
-
-  // Allow admin routes to bypass maintenance
   const isAdminRoute = path.startsWith("/admin");
 
   if (maintenance && !isAdminRoute) {
@@ -32,76 +60,86 @@ export function proxy(req: NextRequest) {
   }
 
   // -----------------------------
-  // 2. ALLOW ALL API ROUTES TO PASS
+  // 2. ALLOW ALL API ROUTES (BUT HANDLE /api/admin/orders BELOW)
   // -----------------------------
   if (path.startsWith("/api")) {
-    return NextResponse.next();
+    // continue to cookie logic
   }
 
   // -----------------------------
   // 3. READ AUTH SESSION COOKIE
   // -----------------------------
-  const rawSession = req.cookies.get("admin_session")?.value;
+  const cookieHeader = request.headers.get("cookie") || "";
+  const match = cookieHeader.match(/admin_session=([^;]+)/);
 
   let role: string | null = null;
 
-  if (rawSession) {
+  if (match) {
     try {
-      const parsed = JSON.parse(rawSession);
+      const parsed = JSON.parse(decodeURIComponent(match[1]));
       role = parsed.role;
     } catch {
-      role = null;
+      // Invalid cookie → clear it and continue
+      const res = NextResponse.next();
+      res.headers.append("Set-Cookie", "admin_session=; Path=/; Max-Age=0;");
+      return res;
     }
   }
 
-  const isLoginPage = path === "/admin/login";
   const isAdminPage = path.startsWith("/admin");
 
   // -----------------------------
   // 4. IF NOT LOGGED IN → REDIRECT
   // -----------------------------
-  if (!role && isAdminPage && !isLoginPage) {
-    return NextResponse.redirect(new URL("/admin/login", req.url));
+  if (!role && isAdminPage) {
+    return NextResponse.redirect(new URL("/admin/login", request.url));
   }
 
   // -----------------------------
-  // 5. IF LOGGED IN → REDIRECT AWAY FROM LOGIN
-  // -----------------------------
-  if (role && isLoginPage) {
-    if (role === "ADMIN") return NextResponse.redirect(new URL("/admin", req.url));
-    if (role === "STAFF") return NextResponse.redirect(new URL("/admin/scanner", req.url));
-    if (role === "AUDIT") return NextResponse.redirect(new URL("/admin/audit", req.url));
-  }
-
-  // -----------------------------
-  // 6. ROLE-BASED ACCESS CONTROL
+  // 5. ROLE-BASED ACCESS CONTROL
   // -----------------------------
 
-  // ADMIN ONLY
-  const adminOnlyRoutes = ["/admin", "/admin/orders", "/admin/checkin"];
-  if (adminOnlyRoutes.includes(path) && role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/admin/login", req.url));
+  // ⭐ Admin-only pages (AUDIT should NOT access these)
+  const adminOnly = [
+    "/admin/users",
+    "/admin/events",
+    "/admin/checkin",
+  ];
+
+  if (adminOnly.some((r) => path.startsWith(r)) && role !== "ADMIN") {
+    return NextResponse.redirect(new URL("/admin/login", request.url));
   }
 
-  // STAFF + ADMIN
-  if (path === "/admin/scanner" && !["ADMIN", "STAFF"].includes(role || "")) {
-    return NextResponse.redirect(new URL("/admin/login", req.url));
+  // ⭐ Allow AUDIT + ADMIN to access /admin/orders
+  if (path.startsWith("/admin/orders")) {
+    if (!["ADMIN", "AUDIT"].includes(role || "")) {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
   }
 
-  // AUDIT ONLY
-  if (path === "/admin/audit" && role !== "AUDIT") {
-    return NextResponse.redirect(new URL("/admin/login", req.url));
+  // ⭐ Allow AUDIT + ADMIN to access /api/admin/orders
+  if (path.startsWith("/api/admin/orders")) {
+    if (!["ADMIN", "AUDIT"].includes(role || "")) {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
   }
 
-  // Debug
-  console.log("PROXY:", path, "ROLE:", role);
+  // ⭐ Staff + Admin can access scanner
+  if (path.startsWith("/admin/scanner")) {
+    if (!["ADMIN", "STAFF"].includes(role || "")) {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
+  }
 
+  // ⭐ Audit + Admin can access audit pages
+  if (path.startsWith("/admin/audit")) {
+    if (!["ADMIN", "AUDIT"].includes(role || "")) {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
+  }
+
+  // -----------------------------
+  // 6. DEFAULT → ALLOW
+  // -----------------------------
   return NextResponse.next();
 }
-
-// -----------------------------
-// 7. MATCH ALL ROUTES
-// -----------------------------
-export const config = {
-  matcher: ["/:path*"],
-};

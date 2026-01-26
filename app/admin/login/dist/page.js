@@ -44,45 +44,107 @@ function AdminLogin() {
     var _a = react_1.useState(""), email = _a[0], setEmail = _a[1];
     var _b = react_1.useState(""), password = _b[0], setPassword = _b[1];
     var _c = react_1.useState(""), error = _c[0], setError = _c[1];
+    var _d = react_1.useState(true), checking = _d[0], setChecking = _d[1];
+    console.log("LOGIN PAGE RENDERED");
+    // ----------------------------------------------------
+    // 1. CHECK IF USER IS ALREADY LOGGED IN
+    // ----------------------------------------------------
+    react_1.useEffect(function () {
+        function checkSession() {
+            var _a;
+            return __awaiter(this, void 0, void 0, function () {
+                var res, data, role;
+                return __generator(this, function (_b) {
+                    switch (_b.label) {
+                        case 0: return [4 /*yield*/, fetch("/api/admin/session")];
+                        case 1:
+                            res = _b.sent();
+                            return [4 /*yield*/, res.json()];
+                        case 2:
+                            data = _b.sent();
+                            role = (_a = data.user) === null || _a === void 0 ? void 0 : _a.role;
+                            if (role === "ADMIN") {
+                                router.push("/admin");
+                                return [2 /*return*/];
+                            }
+                            if (role === "STAFF") {
+                                router.push("/admin/scanner");
+                                return [2 /*return*/];
+                            }
+                            if (role === "AUDIT") {
+                                router.push("/admin/audit");
+                                return [2 /*return*/];
+                            }
+                            // No session → show login form
+                            setChecking(false);
+                            return [2 /*return*/];
+                    }
+                });
+            });
+        }
+        checkSession();
+    }, [router]);
+    // ----------------------------------------------------
+    // 2. HANDLE LOGIN
+    // ----------------------------------------------------
     function handleLogin(e) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var res, data;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var res, data, sessionRes, sessionData, role;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         e.preventDefault();
+                        setError("");
                         return [4 /*yield*/, fetch("/api/auth/login", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ email: email, password: password })
                             })];
                     case 1:
-                        res = _a.sent();
+                        res = _b.sent();
                         return [4 /*yield*/, res.json()];
                     case 2:
-                        data = _a.sent();
-                        if (!res.ok || !data.role) {
+                        data = _b.sent();
+                        if (!res.ok) {
                             setError(data.error || "Login failed");
                             return [2 /*return*/];
                         }
-                        // ⭐ Redirect based on Prisma enum roles
-                        if (data.role === "ADMIN") {
+                        return [4 /*yield*/, fetch("/api/admin/session")];
+                    case 3:
+                        sessionRes = _b.sent();
+                        return [4 /*yield*/, sessionRes.json()];
+                    case 4:
+                        sessionData = _b.sent();
+                        role = (_a = sessionData.user) === null || _a === void 0 ? void 0 : _a.role;
+                        if (!role) {
+                            setError("Unable to load session");
+                            return [2 /*return*/];
+                        }
+                        // Redirect based on role
+                        if (role === "ADMIN")
                             router.push("/admin");
-                        }
-                        else if (data.role === "STAFF") {
+                        else if (role === "STAFF")
                             router.push("/admin/scanner");
-                        }
-                        else if (data.role === "AUDIT") {
+                        else if (role === "AUDIT")
                             router.push("/admin/audit");
-                        }
-                        else {
+                        else
                             setError("Unknown role");
-                        }
                         return [2 /*return*/];
                 }
             });
         });
     }
+    // ----------------------------------------------------
+    // 3. LOADING STATE WHILE CHECKING SESSION
+    // ----------------------------------------------------
+    if (checking) {
+        return (React.createElement("main", { className: "min-h-screen bg-black text-white flex items-center justify-center" },
+            React.createElement("p", { className: "text-xl" }, "Checking session\u2026")));
+    }
+    // ----------------------------------------------------
+    // 4. LOGIN FORM
+    // ----------------------------------------------------
     return (React.createElement("main", { className: "min-h-screen bg-black text-white flex items-center justify-center p-6" },
         React.createElement("form", { onSubmit: handleLogin, className: "bg-gray-900 p-8 rounded-lg w-full max-w-sm space-y-6" },
             React.createElement("h1", { className: "text-3xl font-bold mb-6 text-center" }, "Staff Login"),

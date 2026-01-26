@@ -1,52 +1,94 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-export default function StaffDashboard() {
+export default function AdminDashboard() {
   const router = useRouter();
+  const [role, setRole] = useState<string | null>(null);
 
-  function logout() {
-    // Clear session cookie
-    document.cookie = "admin_session=; Max-Age=0; path=/;";
+  useEffect(() => {
+    async function load() {
+      const res = await fetch("/api/admin/session");
+      const data = await res.json();
+      setRole(data.user?.role || null);
+    }
+    load();
+  }, []);
 
-    // Optional: show toast (if you use a toast system)
-    // toast.success("Logged out successfully");
-
-    // Redirect to login
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" });
     router.push("/admin/login");
   }
 
-  // Scroll to top on load (optional UX polish)
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+  if (role === null) {
+    return (
+      <main className="min-h-screen bg-black text-white flex items-center justify-center">
+        <p className="text-xl">Loading dashboard…</p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6">
-      <h1 className="text-4xl font-bold mb-10">Staff Dashboard</h1>
+      <h1 className="text-4xl font-bold mb-10">
+        {role === "ADMIN" && "Admin Dashboard"}
+        {role === "AUDIT" && "Audit Dashboard"}
+        {role === "STAFF" && "Staff Dashboard"}
+      </h1>
 
       <div className="flex flex-col gap-4 w-full max-w-sm">
-        <button
-          onClick={() => router.push("/admin/checkin")}
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg text-xl font-semibold"
-        >
-          Check-In Panel
-        </button>
+        {(role === "STAFF" || role === "ADMIN") && (
+          <>
+            <button
+              onClick={() => router.push("/admin/checkin")}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg text-xl font-semibold"
+            >
+              Check-In Panel
+            </button>
 
-        <button
-          onClick={() => router.push("/admin/scanner")}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-xl font-semibold"
-        >
-          Open QR Scanner
-        </button>
+            <button
+              onClick={() => router.push("/admin/scanner")}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-xl font-semibold"
+            >
+              Open QR Scanner
+            </button>
+          </>
+        )}
 
-        <button
-          onClick={() => router.push("/admin/orders")}
-          className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg text-xl font-semibold"
-        >
-          Order Management
-        </button>
+        {role === "ADMIN" && (
+          <>
+            <button
+              onClick={() => router.push("/admin/orders")}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg text-xl font-semibold"
+            >
+              Order Management
+            </button>
+
+            <button
+              onClick={() => router.push("/admin/audit")}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg text-xl font-semibold"
+            >
+              Audit Dashboard
+            </button>
+
+            <button
+              onClick={() => router.push("/admin/users")}
+              className="bg-white text-black hover:bg-gray-200 px-6 py-3 rounded-lg text-xl font-semibold"
+            >
+              Manage Users
+            </button>
+          </>
+        )}
+
+        {role === "AUDIT" && (
+          <button
+            onClick={() => router.push("/admin/audit")}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg text-xl font-semibold"
+          >
+            Audit Dashboard
+          </button>
+        )}
 
         <button
           onClick={logout}

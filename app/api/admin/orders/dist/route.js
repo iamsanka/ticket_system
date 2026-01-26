@@ -39,70 +39,63 @@ exports.__esModule = true;
 exports.GET = void 0;
 var server_1 = require("next/server");
 var prisma_1 = require("@/lib/prisma");
-function GET() {
+function GET(req) {
     return __awaiter(this, void 0, void 0, function () {
-        var tickets, unpaidOrders, summary, _i, tickets_1, t, _a, unpaidOrders_1, order, error_1;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var searchParams, eventId, search, where, orders;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
                 case 0:
-                    _b.trys.push([0, 3, , 4]);
-                    return [4 /*yield*/, prisma_1.prisma.ticket.findMany({
-                            select: {
-                                category: true,
-                                tier: true
-                            }
-                        })];
-                case 1:
-                    tickets = _b.sent();
+                    searchParams = new URL(req.url).searchParams;
+                    eventId = searchParams.get("eventId");
+                    search = searchParams.get("search") || "";
+                    where = {};
+                    if (eventId) {
+                        where.eventId = eventId;
+                    }
+                    if (search) {
+                        where.contactNo = { contains: search, mode: "insensitive" };
+                    }
                     return [4 /*yield*/, prisma_1.prisma.order.findMany({
-                            where: {
-                                paid: false
-                            },
+                            where: where,
+                            orderBy: { createdAt: "asc" },
                             select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                                contactNo: true,
                                 adultLounge: true,
                                 adultStandard: true,
                                 childLounge: true,
-                                childStandard: true
+                                childStandard: true,
+                                paymentMethod: true,
+                                serviceFee: true,
+                                paid: true,
+                                event: {
+                                    select: {
+                                        id: true,
+                                        title: true,
+                                        date: true,
+                                        venue: true,
+                                        adultLoungePrice: true,
+                                        adultStandardPrice: true,
+                                        childLoungePrice: true,
+                                        childStandardPrice: true,
+                                        createdAt: true
+                                    }
+                                },
+                                tickets: {
+                                    select: {
+                                        id: true,
+                                        category: true,
+                                        tier: true,
+                                        usedAt: true
+                                    }
+                                }
                             }
                         })];
-                case 2:
-                    unpaidOrders = _b.sent();
-                    summary = {
-                        adultLounge: { paid: 0, unpaid: 0 },
-                        adultStandard: { paid: 0, unpaid: 0 },
-                        childLounge: { paid: 0, unpaid: 0 },
-                        childStandard: { paid: 0, unpaid: 0 }
-                    };
-                    // PAID = count tickets
-                    for (_i = 0, tickets_1 = tickets; _i < tickets_1.length; _i++) {
-                        t = tickets_1[_i];
-                        if (t.category === "ADULT" && t.tier === "LOUNGE") {
-                            summary.adultLounge.paid += 1;
-                        }
-                        if (t.category === "ADULT" && t.tier === "STANDARD") {
-                            summary.adultStandard.paid += 1;
-                        }
-                        if (t.category === "CHILD" && t.tier === "LOUNGE") {
-                            summary.childLounge.paid += 1;
-                        }
-                        if (t.category === "CHILD" && t.tier === "STANDARD") {
-                            summary.childStandard.paid += 1;
-                        }
-                    }
-                    // UNPAID = quantities from unpaid orders
-                    for (_a = 0, unpaidOrders_1 = unpaidOrders; _a < unpaidOrders_1.length; _a++) {
-                        order = unpaidOrders_1[_a];
-                        summary.adultLounge.unpaid += order.adultLounge || 0;
-                        summary.adultStandard.unpaid += order.adultStandard || 0;
-                        summary.childLounge.unpaid += order.childLounge || 0;
-                        summary.childStandard.unpaid += order.childStandard || 0;
-                    }
-                    return [2 /*return*/, server_1.NextResponse.json({ summary: summary })];
-                case 3:
-                    error_1 = _b.sent();
-                    console.error("Admin summary error:", error_1);
-                    return [2 /*return*/, server_1.NextResponse.json({ error: "Internal server error" }, { status: 500 })];
-                case 4: return [2 /*return*/];
+                case 1:
+                    orders = _a.sent();
+                    return [2 /*return*/, server_1.NextResponse.json({ orders: orders })];
             }
         });
     });

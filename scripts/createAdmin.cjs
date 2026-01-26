@@ -4,8 +4,8 @@ const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = "admin1@taprobane.fi";
-  const password = "chamitha@1991";
+  const email = "audit@taprobane.fi";
+  const password = "test@123";
 
   console.log("Checking if admin already exists...");
 
@@ -29,7 +29,7 @@ async function main() {
       email,
       password: hashed,
       name: "Taprobane Staff",
-      role: "ADMIN",
+      role: "AUDIT",
     },
   });
 
