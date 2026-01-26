@@ -14,9 +14,17 @@ function AuditClient(_a) {
             CHILD_STANDARD: { count: 0, total: 0 },
             grandTotal: 0,
             edenredFees: 0,
-            epassiFees: 0
+            epassiFees: 0,
+            paymentTotals: {
+                stripe: 0,
+                klarna: 0,
+                edenred: 0,
+                epassi: 0
+            }
         };
-        var countedOrders = new Set();
+        var orderTotals = {};
+        var serviceFees = {};
+        var paymentMethods = {};
         for (var _i = 0, tickets_1 = tickets; _i < tickets_1.length; _i++) {
             var t = tickets_1[_i];
             var key = t.category + "_" + t.tier;
@@ -35,26 +43,35 @@ function AuditClient(_a) {
                 price = event.childStandardPrice / 100;
             result[key].total += price;
             result.grandTotal += price;
-            // ✅ Only count serviceFee once per order
             var orderId = t.order.id;
-            if (!countedOrders.has(orderId)) {
-                countedOrders.add(orderId);
-                if (t.order.paymentMethod === "edenred") {
-                    result.edenredFees += t.order.serviceFee / 100;
-                }
-                if (t.order.paymentMethod === "epassi") {
-                    result.epassiFees += t.order.serviceFee / 100;
-                }
+            orderTotals[orderId] = (orderTotals[orderId] || 0) + price;
+            paymentMethods[orderId] = t.order.paymentMethod || "";
+            if (!(orderId in serviceFees)) {
+                serviceFees[orderId] = t.order.serviceFee || 0;
             }
+        }
+        for (var orderId in orderTotals) {
+            var method = paymentMethods[orderId];
+            var amount = orderTotals[orderId];
+            if (method === "stripe")
+                result.paymentTotals.stripe += amount;
+            if (method === "klarna")
+                result.paymentTotals.klarna += amount;
+            if (method === "edenred")
+                result.paymentTotals.edenred += amount;
+            if (method === "epassi")
+                result.paymentTotals.epassi += amount;
+            var fee = serviceFees[orderId] / 100;
+            if (method === "edenred")
+                result.edenredFees += fee;
+            if (method === "epassi")
+                result.epassiFees += fee;
         }
         return result;
     }, [tickets]);
     return (React.createElement("main", { className: "min-h-screen bg-black text-white p-8" },
-        React.createElement("h1", { className: "text-3xl font-bold mb-6" }, "Audit Dashboard"),
-        role === "ADMIN" && (React.createElement("button", { onClick: function () { return router.push("/admin"); }, className: "mb-6 px-4 py-2 bg-yellow-400 text-black font-semibold rounded hover:bg-yellow-300 transition" }, "\u2190 Back to Dashboard")),
-        role === "AUDIT" && (React.createElement("button", { onClick: logout, className: "mb-6 px-4 py-2 bg-red-600 text-white font-semibold rounded hover:bg-red-700 transition" }, "Logout")),
+        React.createElement("h2", { className: "text-xl font-semibold mb-4" }, "Ticket Sales Overview"),
         React.createElement("section", { className: "bg-gray-900 p-6 rounded-lg shadow-lg mb-8" },
-            React.createElement("h2", { className: "text-xl font-semibold mb-4" }, "Ticket Sales Overview"),
             React.createElement("table", { className: "w-full text-left" },
                 React.createElement("thead", null,
                     React.createElement("tr", null,
@@ -82,8 +99,8 @@ function AuditClient(_a) {
                 "Grand Total: ",
                 summary.grandTotal.toFixed(2),
                 " \u20AC")),
-        React.createElement("section", { className: "bg-gray-900 p-6 rounded-lg shadow-lg" },
-            React.createElement("h2", { className: "text-xl font-semibold mb-4" }, "Payment Fees"),
+        React.createElement("section", { className: "bg-gray-900 p-6 rounded-lg shadow-lg mb-8" },
+            React.createElement("h2", { className: "text-xl font-semibold mb-4" }, "Service Charges"),
             React.createElement("p", null,
                 "Edenred Fees Total: ",
                 summary.edenredFees.toFixed(2),
@@ -91,6 +108,28 @@ function AuditClient(_a) {
             React.createElement("p", null,
                 "ePassi Fees Total: ",
                 summary.epassiFees.toFixed(2),
-                " \u20AC"))));
+                " \u20AC")),
+        React.createElement("section", { className: "bg-gray-900 p-6 rounded-lg shadow-lg" },
+            React.createElement("h2", { className: "text-xl font-semibold mb-4" }, "Payment Breakdown (without service charges)"),
+            React.createElement("table", { className: "w-full text-left" },
+                React.createElement("thead", null,
+                    React.createElement("tr", null,
+                        React.createElement("th", { className: "pb-2" }, "Method"),
+                        React.createElement("th", { className: "pb-2" }, "Total Paid (\u20AC)"))),
+                React.createElement("tbody", null,
+                    React.createElement("tr", null,
+                        React.createElement("td", null, "Stripe"),
+                        React.createElement("td", null, summary.paymentTotals.stripe.toFixed(2))),
+                    React.createElement("tr", null,
+                        React.createElement("td", null, "Klarna"),
+                        React.createElement("td", null, summary.paymentTotals.klarna.toFixed(2))),
+                    React.createElement("tr", null,
+                        React.createElement("td", null, "Edenred"),
+                        React.createElement("td", null, summary.paymentTotals.edenred.toFixed(2))),
+                    React.createElement("tr", null,
+                        React.createElement("td", null, "ePassi"),
+                        React.createElement("td", null, summary.paymentTotals.epassi.toFixed(2)))))),
+        role === "AUDIT" && (React.createElement("div", { className: "mt-12 flex justify-center" },
+            React.createElement("button", { onClick: logout, className: "px-4 py-2 bg-red-600 text-white font-semibold rounded hover:bg-red-700 transition" }, "Logout")))));
 }
 exports["default"] = AuditClient;
