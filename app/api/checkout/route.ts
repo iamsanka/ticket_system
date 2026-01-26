@@ -102,7 +102,9 @@ export async function POST(req: Request) {
     // Final total
     const totalAmount = subtotal + serviceFee;
 
-    // Manual payment flow (Edenred / ePassi)
+    // ---------------------------------------------------------
+    // MANUAL PAYMENT FLOW (Edenred / ePassi)
+    // ---------------------------------------------------------
     if (paymentMethod === "edenred" || paymentMethod === "epassi") {
       const order = await prisma.order.create({
         data: {
@@ -125,8 +127,37 @@ export async function POST(req: Request) {
       return noCacheJson({ orderId: order.id });
     }
 
-    // Stripe embedded flow (card/Klarna)
-    // ALWAYS create a new order — never reuse old ones
+    // ---------------------------------------------------------
+    // STRIPE FLOW — FIXED TO PREVENT DUPLICATE ORDERS
+    // ---------------------------------------------------------
+
+    // 1. Check if an unpaid Stripe order already exists for this user/event
+    const existingOrder = await prisma.order.findFirst({
+      where: {
+        eventId,
+        email,
+        paymentMethod: "stripe",
+        paid: false,
+      },
+    });
+
+    if (existingOrder) {
+      console.log("Reusing existing Stripe order:", existingOrder.id);
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: subtotal,
+        currency: "eur",
+        metadata: { orderId: existingOrder.id },
+        receipt_email: email,
+      });
+
+      return noCacheJson({
+        clientSecret: paymentIntent.client_secret,
+        orderId: existingOrder.id,
+      });
+    }
+
+    // 2. Create a NEW order only if none exists
     const order = await prisma.order.create({
       data: {
         eventId,
@@ -147,7 +178,7 @@ export async function POST(req: Request) {
 
     const orderId = order.id;
 
-    // Create a fresh PaymentIntent every time
+    // 3. Create a fresh PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: subtotal,
       currency: "eur",

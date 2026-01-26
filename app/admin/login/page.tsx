@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function AdminLogin() {
@@ -8,9 +8,44 @@ export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [checking, setChecking] = useState(true);
+  console.log("LOGIN PAGE RENDERED");
 
+  // ----------------------------------------------------
+  // 1. CHECK IF USER IS ALREADY LOGGED IN
+  // ----------------------------------------------------
+  useEffect(() => {
+    async function checkSession() {
+      const res = await fetch("/api/admin/session");
+      const data = await res.json();
+      const role = data.user?.role;
+
+      if (role === "ADMIN") {
+        router.push("/admin");
+        return;
+      }
+      if (role === "STAFF") {
+        router.push("/admin/scanner");
+        return;
+      }
+      if (role === "AUDIT") {
+        router.push("/admin/audit");
+        return;
+      }
+
+      // No session → show login form
+      setChecking(false);
+    }
+
+    checkSession();
+  }, [router]);
+
+  // ----------------------------------------------------
+  // 2. HANDLE LOGIN
+  // ----------------------------------------------------
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
 
     const res = await fetch("/api/auth/login", {
       method: "POST",
@@ -20,23 +55,42 @@ export default function AdminLogin() {
 
     const data = await res.json();
 
-    if (!res.ok || !data.role) {
+    if (!res.ok) {
       setError(data.error || "Login failed");
       return;
     }
 
-    // ⭐ Redirect based on Prisma enum roles
-    if (data.role === "ADMIN") {
-      router.push("/admin");
-    } else if (data.role === "STAFF") {
-      router.push("/admin/scanner");
-    } else if (data.role === "AUDIT") {
-      router.push("/admin/audit");
-    } else {
-      setError("Unknown role");
+    // After login, fetch session to get role
+    const sessionRes = await fetch("/api/admin/session");
+    const sessionData = await sessionRes.json();
+    const role = sessionData.user?.role;
+
+    if (!role) {
+      setError("Unable to load session");
+      return;
     }
+
+    // Redirect based on role
+    if (role === "ADMIN") router.push("/admin");
+    else if (role === "STAFF") router.push("/admin/scanner");
+    else if (role === "AUDIT") router.push("/admin/audit");
+    else setError("Unknown role");
   }
 
+  // ----------------------------------------------------
+  // 3. LOADING STATE WHILE CHECKING SESSION
+  // ----------------------------------------------------
+  if (checking) {
+    return (
+      <main className="min-h-screen bg-black text-white flex items-center justify-center">
+        <p className="text-xl">Checking session…</p>
+      </main>
+    );
+  }
+
+  // ----------------------------------------------------
+  // 4. LOGIN FORM
+  // ----------------------------------------------------
   return (
     <main className="min-h-screen bg-black text-white flex items-center justify-center p-6">
       <form

@@ -27,15 +27,22 @@ export async function POST(req: Request) {
     );
   }
 
+  // Build session object
+  const session = {
+    id: user.id,
+    email: user.email,
+    role: user.role, // ADMIN | STAFF | AUDIT
+  };
+
   // Create response
   const response = NextResponse.json({ success: true });
 
-  // Set admin session cookie
-  response.cookies.set("admin_session_v2", "true", {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === "production", // allow cookie on localhost
-    path: "/",
+  // Set session cookie
+  response.cookies.set("admin_session", JSON.stringify(session), {
+    httpOnly: true, // secure
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
+    path: "/",
     maxAge: 60 * 60 * 24, // 1 day
   });
 
