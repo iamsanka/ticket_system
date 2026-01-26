@@ -60,9 +60,7 @@ function AdminOrdersPage() {
     }), form = _a[0], setForm = _a[1];
     var _b = react_1.useState([]), orders = _b[0], setOrders = _b[1];
     var _c = react_1.useState(false), loading = _c[0], setLoading = _c[1];
-    // GLOBAL SUMMARY (all orders in DB)
     var _d = react_1.useState(null), summary = _d[0], setSummary = _d[1];
-    // PAGINATION
     var _e = react_1.useState(1), page = _e[0], setPage = _e[1];
     var _f = react_1.useState(1), totalPages = _f[0], setTotalPages = _f[1];
     function fetchSummary() {
@@ -89,7 +87,6 @@ function AdminOrdersPage() {
             });
         });
     }
-    // CLEANUP OLD UNPAID ORDERS
     function cleanupOldOrders() {
         return __awaiter(this, void 0, void 0, function () {
             var err_2;
@@ -110,17 +107,14 @@ function AdminOrdersPage() {
             });
         });
     }
-    // INITIAL LOAD
     react_1.useEffect(function () {
         fetchSummary();
         cleanupOldOrders();
     }, []);
-    // WHEN PAGE CHANGES → RUN SEARCH + SCROLL TO TOP
     react_1.useEffect(function () {
         handleSearch();
         window.scrollTo({ top: 0, behavior: "smooth" });
     }, [page]);
-    // SEARCH ORDERS (with pagination)
     function handleSearch(e) {
         return __awaiter(this, void 0, void 0, function () {
             var res, data;
@@ -129,10 +123,9 @@ function AdminOrdersPage() {
                     case 0:
                         if (e)
                             e.preventDefault();
-                        // Reset to page 1 when a new search is triggered
                         if (page !== 1 && e) {
                             setPage(1);
-                            return [2 /*return*/]; // useEffect([page]) will trigger handleSearch again
+                            return [2 /*return*/];
                         }
                         setLoading(true);
                         return [4 /*yield*/, cleanupOldOrders()];
@@ -156,7 +149,6 @@ function AdminOrdersPage() {
             });
         });
     }
-    // MARK AS PAID
     function markAsPaid(orderId) {
         return __awaiter(this, void 0, void 0, function () {
             var res, data, err_3;
@@ -193,7 +185,6 @@ function AdminOrdersPage() {
             });
         });
     }
-    // RESEND EMAIL
     function resendEmail(orderId) {
         return __awaiter(this, void 0, void 0, function () {
             var res, data;
@@ -220,7 +211,6 @@ function AdminOrdersPage() {
             });
         });
     }
-    // DELETE ORDER (UNPAID ONLY)
     function deleteOrder(orderId) {
         return __awaiter(this, void 0, void 0, function () {
             var res, data, err_4;
@@ -365,7 +355,15 @@ function AdminOrdersPage() {
                             childStandard)),
                     React.createElement("div", { className: "flex gap-3 mt-4" },
                         order.paid ? (React.createElement("button", { disabled: true, className: "bg-gray-400 text-gray-700 px-4 py-2 rounded cursor-not-allowed" }, "Already Paid")) : (React.createElement(React.Fragment, null,
-                            React.createElement("button", { onClick: function () { return markAsPaid(order.id); }, className: "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" }, "Mark as Paid"),
+                            React.createElement("button", { onClick: function () {
+                                    var c1 = window.confirm("Mark this order as paid?");
+                                    if (!c1)
+                                        return;
+                                    var c2 = window.confirm("Have you verified the payment manually?\nThis action cannot be undone.");
+                                    if (!c2)
+                                        return;
+                                    markAsPaid(order.id);
+                                }, className: "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" }, "Mark as Paid"),
                             React.createElement("button", { onClick: function () { return deleteOrder(order.id); }, className: "bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded" }, "Delete Order"))),
                         React.createElement("button", { onClick: function () { return resendEmail(order.id); }, className: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" }, "Resend Email"))));
             })),

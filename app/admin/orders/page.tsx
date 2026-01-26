@@ -15,7 +15,6 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // GLOBAL SUMMARY (all orders in DB)
   const [summary, setSummary] = useState<{
     adultLounge: { paid: number; unpaid: number };
     adultStandard: { paid: number; unpaid: number };
@@ -23,7 +22,6 @@ export default function AdminOrdersPage() {
     childStandard: { paid: number; unpaid: number };
   } | null>(null);
 
-  // PAGINATION
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -37,7 +35,6 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // CLEANUP OLD UNPAID ORDERS
   async function cleanupOldOrders() {
     try {
       await fetch("/api/admin/orders/cleanup");
@@ -46,30 +43,25 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // INITIAL LOAD
   useEffect(() => {
     fetchSummary();
     cleanupOldOrders();
   }, []);
 
-  // WHEN PAGE CHANGES → RUN SEARCH + SCROLL TO TOP
   useEffect(() => {
     handleSearch();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [page]);
 
-  // SEARCH ORDERS (with pagination)
   async function handleSearch(e?: React.FormEvent) {
     if (e) e.preventDefault();
 
-    // Reset to page 1 when a new search is triggered
     if (page !== 1 && e) {
       setPage(1);
-      return; // useEffect([page]) will trigger handleSearch again
+      return;
     }
 
     setLoading(true);
-
     await cleanupOldOrders();
 
     const res = await fetch("/api/admin/orders/search", {
@@ -84,7 +76,6 @@ export default function AdminOrdersPage() {
     setLoading(false);
   }
 
-  // MARK AS PAID
   async function markAsPaid(orderId: string) {
     try {
       const res = await fetch("/api/admin/orders/mark-paid", {
@@ -108,7 +99,6 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // RESEND EMAIL
   async function resendEmail(orderId: string) {
     const res = await fetch("/api/admin/orders/resend-email", {
       method: "POST",
@@ -124,7 +114,6 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // DELETE ORDER (UNPAID ONLY)
   async function deleteOrder(orderId: string) {
     if (!confirm("Are you sure you want to delete this unpaid order?")) return;
 
@@ -161,7 +150,6 @@ export default function AdminOrdersPage() {
 
       <h1 className="text-2xl font-bold mb-6">Order Management</h1>
 
-      {/* GLOBAL SUMMARY TABLE (ALL ORDERS) */}
       {summary && (
         <div className="mb-6 border p-4 rounded bg-white text-black">
           <h2 className="text-lg font-semibold mb-3">Ticket Summary</h2>
@@ -200,7 +188,6 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      {/* SEARCH FORM */}
       <form onSubmit={handleSearch} className="space-y-4 mb-8">
         <h2 className="text-lg font-semibold mb-2">Search Orders</h2>
 
@@ -258,7 +245,6 @@ export default function AdminOrdersPage() {
         </button>
       </form>
 
-      {/* NOTE FILTER */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold mb-2">Edenred Receipt Note</h2>
         <input
@@ -344,7 +330,19 @@ export default function AdminOrdersPage() {
                     ) : (
                       <>
                         <button
-                          onClick={() => markAsPaid(order.id)}
+                          onClick={() => {
+                            const c1 = window.confirm(
+                              "Mark this order as paid?",
+                            );
+                            if (!c1) return;
+
+                            const c2 = window.confirm(
+                              "Have you verified the payment manually?\nThis action cannot be undone.",
+                            );
+                            if (!c2) return;
+
+                            markAsPaid(order.id);
+                          }}
                           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
                         >
                           Mark as Paid
@@ -371,7 +369,6 @@ export default function AdminOrdersPage() {
             })}
           </ul>
 
-          {/* PAGINATION */}
           <div className="flex justify-between mt-6">
             <button
               disabled={page === 1}
