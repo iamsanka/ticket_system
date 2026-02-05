@@ -92,7 +92,8 @@ function AdminDashboard() {
             role === "ADMIN" && (React.createElement(React.Fragment, null,
                 React.createElement("button", { onClick: function () { return router.push("/admin/orders"); }, className: "bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg text-xl font-semibold" }, "Order Management"),
                 React.createElement("button", { onClick: function () { return router.push("/admin/audit"); }, className: "bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg text-xl font-semibold" }, "Audit Dashboard"),
-                React.createElement("button", { onClick: function () { return router.push("/admin/users"); }, className: "bg-white text-black hover:bg-gray-200 px-6 py-3 rounded-lg text-xl font-semibold" }, "Manage Users"))),
+                React.createElement("button", { onClick: function () { return router.push("/admin/users"); }, className: "bg-white text-black hover:bg-gray-200 px-6 py-3 rounded-lg text-xl font-semibold" }, "Manage Users"),
+                React.createElement("button", { onClick: function () { return router.push("/admin/upgrade"); }, className: "bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg text-xl font-semibold" }, "Upgrade Ticket"))),
             role === "AUDIT" && (React.createElement("button", { onClick: function () { return router.push("/admin/audit"); }, className: "bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg text-xl font-semibold" }, "Audit Dashboard")),
             React.createElement("button", { onClick: logout, className: "bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg text-xl font-semibold mt-6" }, "Logout"))));
 }
