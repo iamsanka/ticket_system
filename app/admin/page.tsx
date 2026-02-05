@@ -78,6 +78,14 @@ export default function AdminDashboard() {
             >
               Manage Users
             </button>
+
+            {/* ⭐ NEW BUTTON — Upgrade Ticket */}
+            <button
+              onClick={() => router.push("/admin/upgrade")}
+              className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg text-xl font-semibold"
+            >
+              Upgrade Ticket
+            </button>
           </>
         )}
 

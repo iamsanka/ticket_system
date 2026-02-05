@@ -6,12 +6,13 @@ export async function sendTicketEmail({
   to,
   tickets,
   order,
+  upgraded = false, // ⭐ NEW FLAG
 }: {
   to: string;
   tickets: { category: string; tier: string; code: string; image: string }[];
   order: any;
+  upgraded?: boolean;
 }) {
-  // SMTP Transporter
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT),
@@ -22,7 +23,6 @@ export async function sendTicketEmail({
     },
   });
 
-  // Ticket PNG attachments
   const ticketAttachments = tickets.map((t) => {
     const base64Data = t.image.split(",")[1] || "";
     return {
@@ -31,26 +31,31 @@ export async function sendTicketEmail({
     };
   });
 
-  // Generate invoice image (PNG)
   const invoiceImageBuffer = await generateInvoiceImage(order, tickets);
-
-  // Convert invoice image → PDF
   const invoicePdfBuffer = await invoiceImageToPdf(invoiceImageBuffer);
 
-  // Format event date
   const formattedDate = new Date(order.event.date).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 
-  // Email HTML
   const emailHtml = `
     <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; padding: 20px; max-width: 600px; margin: auto;">
 
       <h2 style="color: #0055A5; margin-bottom: 10px;">🎟️ Your Tickets Are Ready</h2>
 
       <p style="font-size: 16px;">Hi ${order.name || "Guest"},</p>
+
+      ${
+        upgraded
+          ? `
+        <p style="font-size: 16px; color: #b30000;">
+          ⚠️ Your previous tickets have been cancelled and are no longer valid.
+        </p>
+      `
+          : ""
+      }
 
       <p style="font-size: 16px;">
         Thank you for booking with <strong>Taprobane Entertainment</strong>.
@@ -83,11 +88,7 @@ export async function sendTicketEmail({
       </ul>
 
       <p style="margin-top: 30px; font-size: 15px;">
-        If you have any questions or need assistance, simply reply to this email. We're here to help.
-      </p>
-
-      <p style="margin-top: 20px; font-size: 15px;">
-        We look forward to welcoming you to the event.
+        If you have any questions or need assistance, simply reply to this email.
       </p>
 
       <p style="margin-top: 40px; font-size: 13px; color: #777;">
@@ -96,7 +97,6 @@ export async function sendTicketEmail({
     </div>
   `;
 
-  // Send email
   await transporter.sendMail({
     from: process.env.SMTP_FROM,
     to,
