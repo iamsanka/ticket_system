@@ -36,13 +36,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.POST = exports.bodyParser = exports.preferredRegion = exports.dynamic = exports.runtime = void 0;
+exports.POST = exports.bodyParser = exports.dynamic = exports.runtime = void 0;
 var server_1 = require("next/server");
 var stripe_1 = require("stripe");
 var prisma_1 = require("@/lib/prisma");
 exports.runtime = "nodejs";
 exports.dynamic = "force-dynamic";
-exports.preferredRegion = "undefined";
+//export const preferredRegion = "undefined";
 exports.bodyParser = false;
 var stripe = new stripe_1["default"](process.env.STRIPE_SECRET_KEY);
 function POST(req) {
