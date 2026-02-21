@@ -42,7 +42,7 @@ var stripe_1 = require("stripe");
 var prisma_1 = require("@/lib/prisma");
 exports.runtime = "nodejs";
 exports.dynamic = "force-dynamic";
-exports.preferredRegion = "auto";
+exports.preferredRegion = "undefined";
 exports.bodyParser = false;
 var stripe = new stripe_1["default"](process.env.STRIPE_SECRET_KEY);
 function POST(req) {
