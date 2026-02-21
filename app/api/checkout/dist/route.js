@@ -54,11 +54,11 @@ function noCacheJson(data, status) {
 }
 function POST(req) {
     return __awaiter(this, void 0, void 0, function () {
-        var body, eventId, name, email, contactNo, _a, adultLounge, _b, adultStandard, _c, childLounge, _d, childStandard, paymentMethod, event, subtotal, currentLoungeCount, serviceFee, totalTickets, totalAmount, order_1, existingOrder, paymentIntent_1, order, orderId, paymentIntent, error_1;
+        var body, eventId, name, email, contactNo, _a, adultLounge, _b, adultStandard, _c, childLounge, _d, childStandard, paymentMethod, event, subtotal, currentLoungeCount, serviceFee, totalTickets, totalAmount, order_1, order, orderId, paymentIntent, error_1;
         return __generator(this, function (_e) {
             switch (_e.label) {
                 case 0:
-                    _e.trys.push([0, 12, , 13]);
+                    _e.trys.push([0, 9, , 10]);
                     return [4 /*yield*/, req.json()];
                 case 1:
                     body = _e.sent();
@@ -132,31 +132,7 @@ function POST(req) {
                 case 5:
                     order_1 = _e.sent();
                     return [2 /*return*/, noCacheJson({ orderId: order_1.id })];
-                case 6: return [4 /*yield*/, prisma_1.prisma.order.findFirst({
-                        where: {
-                            eventId: eventId,
-                            email: email,
-                            paymentMethod: "stripe",
-                            paid: false
-                        }
-                    })];
-                case 7:
-                    existingOrder = _e.sent();
-                    if (!existingOrder) return [3 /*break*/, 9];
-                    console.log("Reusing existing Stripe order:", existingOrder.id);
-                    return [4 /*yield*/, stripe.paymentIntents.create({
-                            amount: subtotal,
-                            currency: "eur",
-                            metadata: { orderId: existingOrder.id },
-                            receipt_email: email
-                        })];
-                case 8:
-                    paymentIntent_1 = _e.sent();
-                    return [2 /*return*/, noCacheJson({
-                            clientSecret: paymentIntent_1.client_secret,
-                            orderId: existingOrder.id
-                        })];
-                case 9: return [4 /*yield*/, prisma_1.prisma.order.create({
+                case 6: return [4 /*yield*/, prisma_1.prisma.order.create({
                         data: {
                             eventId: eventId,
                             name: name,
@@ -173,7 +149,7 @@ function POST(req) {
                             paid: false
                         }
                     })];
-                case 10:
+                case 7:
                     order = _e.sent();
                     orderId = order.id;
                     return [4 /*yield*/, stripe.paymentIntents.create({
@@ -182,17 +158,17 @@ function POST(req) {
                             metadata: { orderId: orderId },
                             receipt_email: email
                         })];
-                case 11:
+                case 8:
                     paymentIntent = _e.sent();
                     return [2 /*return*/, noCacheJson({
                             clientSecret: paymentIntent.client_secret,
                             orderId: orderId
                         })];
-                case 12:
+                case 9:
                     error_1 = _e.sent();
                     console.error("Checkout error:", error_1);
                     return [2 /*return*/, noCacheJson({ error: error_1.message || "Checkout failed" }, 500)];
-                case 13: return [2 /*return*/];
+                case 10: return [2 /*return*/];
             }
         });
     });
