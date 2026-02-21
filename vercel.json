@@ -1,3 +1,0 @@
-{
-  "buildCommand": "rm -rf node_modules/.prisma && rm -rf .vercel/cache && npx prisma generate && next build"
-}
