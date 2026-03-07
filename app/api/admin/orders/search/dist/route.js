@@ -36,9 +36,56 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.POST = void 0;
+exports.POST = exports.GET = void 0;
 var server_1 = require("next/server");
 var prisma_1 = require("@/lib/prisma");
+/* -------------------------------
+   GET — used by Ticket Management
+-------------------------------- */
+function GET(req) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function () {
+        var searchParams, q, ticket, order, orders;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    searchParams = new URL(req.url).searchParams;
+                    q = (_a = searchParams.get("q")) === null || _a === void 0 ? void 0 : _a.trim();
+                    if (!q)
+                        return [2 /*return*/, server_1.NextResponse.json({ orders: [] })];
+                    return [4 /*yield*/, prisma_1.prisma.ticket.findFirst({
+                            where: { ticketCode: { contains: q, mode: "insensitive" } }
+                        })];
+                case 1:
+                    ticket = _b.sent();
+                    if (!ticket) return [3 /*break*/, 3];
+                    return [4 /*yield*/, prisma_1.prisma.order.findUnique({
+                            where: { id: ticket.orderId },
+                            include: { tickets: true, event: true }
+                        })];
+                case 2:
+                    order = _b.sent();
+                    return [2 /*return*/, server_1.NextResponse.json({ orders: order ? [order] : [] })];
+                case 3: return [4 /*yield*/, prisma_1.prisma.order.findMany({
+                        where: {
+                            OR: [
+                                { email: { contains: q, mode: "insensitive" } },
+                                { contactNo: { contains: q, mode: "insensitive" } },
+                            ]
+                        },
+                        include: { tickets: true, event: true }
+                    })];
+                case 4:
+                    orders = _b.sent();
+                    return [2 /*return*/, server_1.NextResponse.json({ orders: orders })];
+            }
+        });
+    });
+}
+exports.GET = GET;
+/* -------------------------------
+   POST — your existing advanced search
+-------------------------------- */
 function POST(req) {
     return __awaiter(this, void 0, void 0, function () {
         var _a, contactNo, email, ticketCode, status, paid, note, paymentMethod, _b, page, _c, pageSize, skip, take, where, ticket, order, _d, orders, total, error_1;
@@ -61,10 +108,7 @@ function POST(req) {
                     if (!ticket) return [3 /*break*/, 4];
                     return [4 /*yield*/, prisma_1.prisma.order.findUnique({
                             where: { id: ticket.orderId },
-                            include: {
-                                tickets: true,
-                                event: true
-                            }
+                            include: { tickets: true, event: true }
                         })];
                 case 3:
                     order = _e.sent();
@@ -83,47 +127,33 @@ function POST(req) {
                 case 5:
                     // CONTACT NUMBER SEARCH
                     if (contactNo === null || contactNo === void 0 ? void 0 : contactNo.trim()) {
-                        where.contactNo = {
-                            contains: contactNo.trim(),
-                            mode: "insensitive"
-                        };
+                        where.contactNo = { contains: contactNo.trim(), mode: "insensitive" };
                     }
                     // EMAIL SEARCH
                     if (email === null || email === void 0 ? void 0 : email.trim()) {
-                        where.email = {
-                            contains: email.trim(),
-                            mode: "insensitive"
-                        };
+                        where.email = { contains: email.trim(), mode: "insensitive" };
                     }
                     // STATUS FILTER
                     if (status && status !== "ALL") {
                         where.status = status;
                     }
                     // PAID FILTER
-                    if (paid === "true") {
+                    if (paid === "true")
                         where.paid = true;
-                    }
-                    else if (paid === "false") {
+                    if (paid === "false")
                         where.paid = false;
-                    }
-                    // ⭐ PAYMENT METHOD FILTER
+                    // PAYMENT METHOD FILTER
                     if (paymentMethod === null || paymentMethod === void 0 ? void 0 : paymentMethod.trim()) {
                         where.paymentMethod = paymentMethod.trim();
                     }
                     // NOTE SEARCH
                     if (note === null || note === void 0 ? void 0 : note.trim()) {
-                        where.receiptNote = {
-                            contains: note.trim(),
-                            mode: "insensitive"
-                        };
+                        where.receiptNote = { contains: note.trim(), mode: "insensitive" };
                     }
                     return [4 /*yield*/, Promise.all([
                             prisma_1.prisma.order.findMany({
                                 where: where,
-                                include: {
-                                    tickets: true,
-                                    event: true
-                                },
+                                include: { tickets: true, event: true },
                                 orderBy: { createdAt: "desc" },
                                 skip: skip,
                                 take: take

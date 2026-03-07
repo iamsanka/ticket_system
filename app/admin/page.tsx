@@ -86,6 +86,14 @@ export default function AdminDashboard() {
             >
               Upgrade Ticket
             </button>
+
+            {/*New button ticket management */}
+            <button
+              onClick={() => router.push("/admin/tickets")}
+              className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-lg text-xl font-semibold"
+            >
+              Ticket Management
+            </button>
           </>
         )}
 

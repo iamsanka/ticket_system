@@ -54,11 +54,11 @@ function noCacheJson(data, status) {
 }
 function POST(req) {
     return __awaiter(this, void 0, void 0, function () {
-        var body, eventId, name, email, contactNo, _a, adultLounge, _b, adultStandard, _c, childLounge, _d, childStandard, paymentMethod, event, subtotal, currentLoungeCount, serviceFee, totalTickets, totalAmount, order_1, order, orderId, paymentIntent, error_1;
+        var body, eventId, name, email, contactNo, _a, adultLounge, _b, adultStandard, _c, childLounge, _d, childStandard, paymentMethod, event, subtotal, currentLoungeCount, serviceFee, totalTickets, totalAmount, order_1, existingStripeOrder, paymentIntent_1, order, orderId, paymentIntent, error_1;
         return __generator(this, function (_e) {
             switch (_e.label) {
                 case 0:
-                    _e.trys.push([0, 9, , 10]);
+                    _e.trys.push([0, 12, , 13]);
                     return [4 /*yield*/, req.json()];
                 case 1:
                     body = _e.sent();
@@ -79,16 +79,11 @@ function POST(req) {
                         childLounge * event.childLoungePrice +
                         childStandard * event.childStandardPrice;
                     if (subtotal < 50) {
-                        return [2 /*return*/, noCacheJson({
-                                error: "Minimum charge is €0.50. Please select at least one ticket."
-                            }, 400)];
+                        return [2 /*return*/, noCacheJson({ error: "Minimum charge is €0.50. Please select at least one ticket." }, 400)];
                     }
                     if (!(adultLounge > 0)) return [3 /*break*/, 4];
                     return [4 /*yield*/, prisma_1.prisma.ticket.count({
-                            where: {
-                                category: "ADULT",
-                                tier: "LOUNGE"
-                            }
+                            where: { category: "ADULT", tier: "LOUNGE" }
                         })];
                 case 3:
                     currentLoungeCount = _e.sent();
@@ -101,14 +96,11 @@ function POST(req) {
                 case 4:
                     serviceFee = 0;
                     if (paymentMethod === "edenred") {
-                        serviceFee = Math.round(subtotal * 0.05); // 5%
+                        serviceFee = Math.round(subtotal * 0.05);
                     }
                     if (paymentMethod === "epassi") {
-                        totalTickets = adultLounge +
-                            adultStandard +
-                            childLounge +
-                            childStandard;
-                        serviceFee = totalTickets * 500; // €5 per ticket
+                        totalTickets = adultLounge + adultStandard + childLounge + childStandard;
+                        serviceFee = totalTickets * 500;
                     }
                     totalAmount = subtotal + serviceFee;
                     if (!(paymentMethod === "edenred" || paymentMethod === "epassi")) return [3 /*break*/, 6];
@@ -132,7 +124,35 @@ function POST(req) {
                 case 5:
                     order_1 = _e.sent();
                     return [2 /*return*/, noCacheJson({ orderId: order_1.id })];
-                case 6: return [4 /*yield*/, prisma_1.prisma.order.create({
+                case 6: return [4 /*yield*/, prisma_1.prisma.order.findFirst({
+                        where: {
+                            email: email,
+                            eventId: eventId,
+                            paymentMethod: "stripe",
+                            status: "pending",
+                            paid: false,
+                            adultLounge: adultLounge,
+                            adultStandard: adultStandard,
+                            childLounge: childLounge,
+                            childStandard: childStandard
+                        }
+                    })];
+                case 7:
+                    existingStripeOrder = _e.sent();
+                    if (!existingStripeOrder) return [3 /*break*/, 9];
+                    return [4 /*yield*/, stripe.paymentIntents.create({
+                            amount: subtotal,
+                            currency: "eur",
+                            metadata: { orderId: existingStripeOrder.id },
+                            receipt_email: email
+                        })];
+                case 8:
+                    paymentIntent_1 = _e.sent();
+                    return [2 /*return*/, noCacheJson({
+                            clientSecret: paymentIntent_1.client_secret,
+                            orderId: existingStripeOrder.id
+                        })];
+                case 9: return [4 /*yield*/, prisma_1.prisma.order.create({
                         data: {
                             eventId: eventId,
                             name: name,
@@ -149,7 +169,7 @@ function POST(req) {
                             paid: false
                         }
                     })];
-                case 7:
+                case 10:
                     order = _e.sent();
                     orderId = order.id;
                     return [4 /*yield*/, stripe.paymentIntents.create({
@@ -158,17 +178,17 @@ function POST(req) {
                             metadata: { orderId: orderId },
                             receipt_email: email
                         })];
-                case 8:
+                case 11:
                     paymentIntent = _e.sent();
                     return [2 /*return*/, noCacheJson({
                             clientSecret: paymentIntent.client_secret,
                             orderId: orderId
                         })];
-                case 9:
+                case 12:
                     error_1 = _e.sent();
                     console.error("Checkout error:", error_1);
                     return [2 /*return*/, noCacheJson({ error: error_1.message || "Checkout failed" }, 500)];
-                case 10: return [2 /*return*/];
+                case 13: return [2 /*return*/];
             }
         });
     });

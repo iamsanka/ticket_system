@@ -1,6 +1,46 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+/* -------------------------------
+   GET — used by Ticket Management
+-------------------------------- */
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const q = searchParams.get("q")?.trim();
+
+  if (!q) return NextResponse.json({ orders: [] });
+
+  // 1) Search by ticket code
+  const ticket = await prisma.ticket.findFirst({
+    where: { ticketCode: { contains: q, mode: "insensitive" } },
+  });
+
+  if (ticket) {
+    const order = await prisma.order.findUnique({
+      where: { id: ticket.orderId },
+      include: { tickets: true, event: true },
+    });
+
+    return NextResponse.json({ orders: order ? [order] : [] });
+  }
+
+  // 2) Search by email or phone
+  const orders = await prisma.order.findMany({
+    where: {
+      OR: [
+        { email: { contains: q, mode: "insensitive" } },
+        { contactNo: { contains: q, mode: "insensitive" } },
+      ],
+    },
+    include: { tickets: true, event: true },
+  });
+
+  return NextResponse.json({ orders });
+}
+
+/* -------------------------------
+   POST — your existing advanced search
+-------------------------------- */
 export async function POST(req: Request) {
   try {
     const {
@@ -10,7 +50,7 @@ export async function POST(req: Request) {
       status,
       paid,
       note,
-      paymentMethod,   // ⭐ NEW FIELD
+      paymentMethod,
       page = 1,
       pageSize = 10,
     } = await req.json();
@@ -20,7 +60,7 @@ export async function POST(req: Request) {
 
     const where: any = {};
 
-    // TICKET CODE SEARCH (Overrides all other filters)
+    // TICKET CODE SEARCH
     if (ticketCode?.trim()) {
       const ticket = await prisma.ticket.findFirst({
         where: { ticketCode: ticketCode.trim() },
@@ -29,10 +69,7 @@ export async function POST(req: Request) {
       if (ticket) {
         const order = await prisma.order.findUnique({
           where: { id: ticket.orderId },
-          include: {
-            tickets: true,
-            event: true,
-          },
+          include: { tickets: true, event: true },
         });
 
         return NextResponse.json({
@@ -53,18 +90,12 @@ export async function POST(req: Request) {
 
     // CONTACT NUMBER SEARCH
     if (contactNo?.trim()) {
-      where.contactNo = {
-        contains: contactNo.trim(),
-        mode: "insensitive",
-      };
+      where.contactNo = { contains: contactNo.trim(), mode: "insensitive" };
     }
 
     // EMAIL SEARCH
     if (email?.trim()) {
-      where.email = {
-        contains: email.trim(),
-        mode: "insensitive",
-      };
+      where.email = { contains: email.trim(), mode: "insensitive" };
     }
 
     // STATUS FILTER
@@ -73,33 +104,23 @@ export async function POST(req: Request) {
     }
 
     // PAID FILTER
-    if (paid === "true") {
-      where.paid = true;
-    } else if (paid === "false") {
-      where.paid = false;
-    }
+    if (paid === "true") where.paid = true;
+    if (paid === "false") where.paid = false;
 
-    // ⭐ PAYMENT METHOD FILTER
+    // PAYMENT METHOD FILTER
     if (paymentMethod?.trim()) {
       where.paymentMethod = paymentMethod.trim();
     }
 
     // NOTE SEARCH
     if (note?.trim()) {
-      where.receiptNote = {
-        contains: note.trim(),
-        mode: "insensitive",
-      };
+      where.receiptNote = { contains: note.trim(), mode: "insensitive" };
     }
 
-    // MAIN ORDER SEARCH
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         where,
-        include: {
-          tickets: true,
-          event: true,
-        },
+        include: { tickets: true, event: true },
         orderBy: { createdAt: "desc" },
         skip,
         take,
@@ -115,9 +136,6 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("Admin search error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

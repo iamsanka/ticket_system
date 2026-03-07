@@ -43,7 +43,9 @@ export async function POST(req: Request) {
       return noCacheJson({ error: "Event not found" }, 404);
     }
 
-    // 1. Calculate subtotal
+    // ---------------------------------------------------------
+    // PRICE CALCULATIONS
+    // ---------------------------------------------------------
     const subtotal =
       adultLounge * event.adultLoungePrice +
       adultStandard * event.adultStandardPrice +
@@ -52,10 +54,7 @@ export async function POST(req: Request) {
 
     if (subtotal < 50) {
       return noCacheJson(
-        {
-          error:
-            "Minimum charge is €0.50. Please select at least one ticket.",
-        },
+        { error: "Minimum charge is €0.50. Please select at least one ticket." },
         400
       );
     }
@@ -63,43 +62,32 @@ export async function POST(req: Request) {
     // Adult Lounge seat limit check (max 100)
     if (adultLounge > 0) {
       const currentLoungeCount = await prisma.ticket.count({
-        where: {
-          category: "ADULT",
-          tier: "LOUNGE",
-        },
+        where: { category: "ADULT", tier: "LOUNGE" },
       });
 
       if (currentLoungeCount + adultLounge > 100) {
         return noCacheJson(
           {
-            error: `Only ${Math.max(
-              0,
-              100 - currentLoungeCount
-            )} Adult Lounge seats remaining.`,
+            error: `Only ${Math.max(0, 100 - currentLoungeCount)} Adult Lounge seats remaining.`,
           },
           400
         );
       }
     }
 
-    // Calculate service fee
+    // Service fee
     let serviceFee = 0;
 
     if (paymentMethod === "edenred") {
-      serviceFee = Math.round(subtotal * 0.05); // 5%
+      serviceFee = Math.round(subtotal * 0.05);
     }
 
     if (paymentMethod === "epassi") {
       const totalTickets =
-        adultLounge +
-        adultStandard +
-        childLounge +
-        childStandard;
-
-      serviceFee = totalTickets * 500; // €5 per ticket
+        adultLounge + adultStandard + childLounge + childStandard;
+      serviceFee = totalTickets * 500;
     }
 
-    // Final total
     const totalAmount = subtotal + serviceFee;
 
     // ---------------------------------------------------------
@@ -128,9 +116,39 @@ export async function POST(req: Request) {
     }
 
     // ---------------------------------------------------------
-    // STRIPE FLOW — ALWAYS CREATE A NEW ORDER
+    // STRIPE FLOW — FIX DUPLICATES + ALWAYS UPDATE PRICE
     // ---------------------------------------------------------
 
+    // Reuse order ONLY if ticket selection is identical
+    const existingStripeOrder = await prisma.order.findFirst({
+      where: {
+        email,
+        eventId,
+        paymentMethod: "stripe",
+        status: "pending",
+        paid: false,
+        adultLounge,
+        adultStandard,
+        childLounge,
+        childStandard,
+      },
+    });
+
+    if (existingStripeOrder) {
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: subtotal,
+        currency: "eur",
+        metadata: { orderId: existingStripeOrder.id },
+        receipt_email: email,
+      });
+
+      return noCacheJson({
+        clientSecret: paymentIntent.client_secret,
+        orderId: existingStripeOrder.id,
+      });
+    }
+
+    // Create a new order if ticket selection changed
     const order = await prisma.order.create({
       data: {
         eventId,
@@ -151,7 +169,6 @@ export async function POST(req: Request) {
 
     const orderId = order.id;
 
-    // Create a fresh PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: subtotal,
       currency: "eur",
