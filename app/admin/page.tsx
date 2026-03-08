@@ -79,7 +79,6 @@ export default function AdminDashboard() {
               Manage Users
             </button>
 
-            {/* ⭐ NEW BUTTON — Upgrade Ticket */}
             <button
               onClick={() => router.push("/admin/upgrade")}
               className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg text-xl font-semibold"
@@ -87,12 +86,19 @@ export default function AdminDashboard() {
               Upgrade Ticket
             </button>
 
-            {/*New button ticket management */}
             <button
               onClick={() => router.push("/admin/tickets")}
               className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-lg text-xl font-semibold"
             >
               Ticket Management
+            </button>
+
+            {/* ⭐ NEW — Single Raffle Draw Button */}
+            <button
+              onClick={() => router.push("/admin/raffle")}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg text-xl font-semibold"
+            >
+              Raffle Draw
             </button>
           </>
         )}

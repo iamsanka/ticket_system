@@ -14,15 +14,15 @@ datasource db {
 //
 
 model Event {
-  id        String   @id @default(cuid())
-  title     String
-  date      DateTime
-  venue     String
+  id    String   @id @default(cuid())
+  title String
+  date  DateTime
+  venue String
 
-  adultLoungePrice    Int
-  adultStandardPrice  Int
-  childLoungePrice    Int
-  childStandardPrice  Int
+  adultLoungePrice   Int
+  adultStandardPrice Int
+  childLoungePrice   Int
+  childStandardPrice Int
 
   createdAt DateTime @default(now())
   orders    Order[]
@@ -37,34 +37,34 @@ model Event {
 //
 
 model Order {
-  id        String   @id @default(cuid())
-  eventId   String
+  id      String @id @default(cuid())
+  eventId String
 
   adultLounge   Int @default(0)
   adultStandard Int @default(0)
   childLounge   Int @default(0)
   childStandard Int @default(0)
 
-  totalAmount  Int
-  serviceFee   Int? @default(0)
+  totalAmount Int
+  serviceFee  Int? @default(0)
 
-  paid        Boolean  @default(false)
-  status      String   @default("pending")
+  paid   Boolean @default(false)
+  status String  @default("pending")
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  email       String
-  contactNo   String?
-  name        String?
+  email     String
+  contactNo String?
+  name      String?
 
   paymentMethod String?
   ticketSent    Boolean @default(false)
 
-  receiptUrl    String?
-  receiptNote   String?
+  receiptUrl  String?
+  receiptNote String?
 
-  event       Event    @relation(fields: [eventId], references: [id])
-  tickets     Ticket[]
+  event   Event    @relation(fields: [eventId], references: [id])
+  tickets Ticket[]
 
   @@index([eventId])
   @@index([email])
@@ -80,18 +80,18 @@ model Order {
 //
 
 model Ticket {
-  id        String   @id @default(cuid())
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
 
-  category  TicketCategory
-  tier      TicketTier
+  category TicketCategory
+  tier     TicketTier
 
   ticketCode String? @unique
   qrCode     String
 
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([orderId])
   @@index([category])
@@ -116,16 +116,53 @@ enum TicketTier {
 //
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
+  id        String   @id @default(cuid())
+  email     String   @unique
   password  String
   name      String?
-  role      UserRole  @default(ADMIN)
-  createdAt DateTime  @default(now())
+  role      UserRole @default(ADMIN)
+  createdAt DateTime @default(now())
 }
 
 enum UserRole {
   ADMIN
   STAFF
   AUDIT
+}
+
+//
+// ─────────────────────────────────────────────
+//   RAFFLE CONFIG MODELS (NEW, ADDITIVE ONLY)
+// ─────────────────────────────────────────────
+//
+
+model ManualRaffleConfig {
+  id      String  @id @default(cuid())
+  // Optional: tie to a specific event if you want per-event raffles later
+  eventId String?
+
+  enabled Boolean @default(false)
+
+  // Ticket codes for winners (manual entry by admin)
+  firstCode  String?
+  secondCode String?
+  thirdCode  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RandomRaffleConfig {
+  id      String  @id @default(cuid())
+  // Optional: tie to a specific event if needed
+  eventId String?
+
+  enabled Boolean @default(false)
+
+  // Date range for eligible orders/tickets
+  startDate DateTime?
+  endDate   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
