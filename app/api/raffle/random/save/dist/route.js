@@ -36,45 +36,47 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.POST = exports.GET = void 0;
+exports.POST = void 0;
 var server_1 = require("next/server");
 var prisma_1 = require("@/lib/prisma");
-function GET() {
-    return __awaiter(this, void 0, void 0, function () {
-        var config;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, prisma_1.prisma.manualRaffleConfig.findFirst()];
-                case 1:
-                    config = _a.sent();
-                    return [2 /*return*/, server_1.NextResponse.json(config || null)];
-            }
-        });
-    });
-}
-exports.GET = GET;
 function POST(req) {
     return __awaiter(this, void 0, void 0, function () {
-        var _a, firstCode, secondCode, thirdCode, enabled, config;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0: return [4 /*yield*/, req.json()];
+        var body, saved, err_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 3, , 4]);
+                    return [4 /*yield*/, req.json()];
                 case 1:
-                    _a = _b.sent(), firstCode = _a.firstCode, secondCode = _a.secondCode, thirdCode = _a.thirdCode, enabled = _a.enabled;
-                    return [4 /*yield*/, prisma_1.prisma.manualRaffleConfig.upsert({
-                            where: { id: "manual-singleton" },
-                            update: { firstCode: firstCode, secondCode: secondCode, thirdCode: thirdCode, enabled: enabled },
-                            create: {
-                                id: "manual-singleton",
-                                firstCode: firstCode,
-                                secondCode: secondCode,
-                                thirdCode: thirdCode,
-                                enabled: !!enabled
+                    body = _a.sent();
+                    return [4 /*yield*/, prisma_1.prisma.randomRaffleResult.create({
+                            data: {
+                                eventName: body.eventName,
+                                firstTicket: body.firstTicket,
+                                firstName: body.firstName,
+                                firstEmail: body.firstEmail,
+                                firstContact: body.firstContact,
+                                secondTicket: body.secondTicket,
+                                secondName: body.secondName,
+                                secondEmail: body.secondEmail,
+                                secondContact: body.secondContact,
+                                thirdTicket: body.thirdTicket,
+                                thirdName: body.thirdName,
+                                thirdEmail: body.thirdEmail,
+                                thirdContact: body.thirdContact,
+                                usedDateRange: body.usedDateRange,
+                                startDate: body.startDate ? new Date(body.startDate) : null,
+                                endDate: body.endDate ? new Date(body.endDate) : null
                             }
                         })];
                 case 2:
-                    config = _b.sent();
-                    return [2 /*return*/, server_1.NextResponse.json(config)];
+                    saved = _a.sent();
+                    return [2 /*return*/, server_1.NextResponse.json({ success: true, saved: saved })];
+                case 3:
+                    err_1 = _a.sent();
+                    console.error("Random raffle save error:", err_1);
+                    return [2 /*return*/, server_1.NextResponse.json({ error: "Failed to save random raffle result" }, { status: 500 })];
+                case 4: return [2 /*return*/];
             }
         });
     });

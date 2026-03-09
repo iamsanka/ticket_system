@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const config = await prisma.ManualRaffleConfig.findFirst();
+  const config = await prisma.manualRaffleConfig.findFirst();
   return NextResponse.json(config || null);
 }
 
 export async function POST(req: Request) {
   const { firstCode, secondCode, thirdCode, enabled } = await req.json();
 
-  const config = await prisma.ManualRaffleConfig.upsert({
+  const config = await prisma.manualRaffleConfig.upsert({
     where: { id: "manual-singleton" },
     update: { firstCode, secondCode, thirdCode, enabled },
     create: {

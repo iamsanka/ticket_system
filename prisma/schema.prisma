@@ -152,17 +152,35 @@ model ManualRaffleConfig {
   updatedAt DateTime @updatedAt
 }
 
-model RandomRaffleConfig {
-  id      String  @id @default(cuid())
-  // Optional: tie to a specific event if needed
-  eventId String?
+model RandomRaffleResult {
+  id        String   @id @default(cuid())
 
-  enabled Boolean @default(false)
+  // Event name for this draw
+  eventName String?
 
-  // Date range for eligible orders/tickets
-  startDate DateTime?
-  endDate   DateTime?
+  // 1st place winner
+  firstTicket   String
+  firstName     String?
+  firstEmail    String?
+  firstContact  String?
+
+  // 2nd place winner
+  secondTicket  String
+  secondName    String?
+  secondEmail   String?
+  secondContact String?
+
+  // 3rd place winner
+  thirdTicket   String
+  thirdName     String?
+  thirdEmail    String?
+  thirdContact  String?
+
+  // Date range used for the draw
+  usedDateRange Boolean @default(false)
+  startDate     DateTime?
+  endDate       DateTime?
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
+

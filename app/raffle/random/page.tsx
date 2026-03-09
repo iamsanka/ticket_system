@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { confettiBurst, confettiSide, confettiRain } from "@/lib/confetti";
 
 type Ticket = {
   ticketCode: string;
@@ -34,7 +35,6 @@ export default function RandomRafflePage() {
   const [showFirst, setShowFirst] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
-  // Date range UI
   const [useDateRange, setUseDateRange] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -63,7 +63,6 @@ export default function RandomRafflePage() {
   async function startReveal() {
     if (step === 0) {
       const loaded = await loadTickets();
-
       if (!loaded || loaded.length === 0) {
         alert("No tickets available for this draw.");
         return;
@@ -83,9 +82,20 @@ export default function RandomRafflePage() {
       clearInterval(interval);
       setAnimating(false);
 
-      if (step === 0) setShowThird(true);
-      if (step === 1) setShowSecond(true);
-      if (step === 2) setShowFirst(true);
+      if (step === 0) {
+        setShowThird(true);
+        confettiSide();
+      }
+
+      if (step === 1) {
+        setShowSecond(true);
+        confettiSide();
+      }
+
+      if (step === 2) {
+        setShowFirst(true);
+        confettiBurst();
+      }
 
       setStep((prev) => prev + 1);
     }, 7000);
@@ -95,25 +105,57 @@ export default function RandomRafflePage() {
     if (!winner) return null;
 
     return (
-      <div className="border-4 border-yellow-400 p-8 rounded-xl text-center space-y-4 bg-black bg-opacity-60 w-full max-w-[380px]">
-        <h2 className="text-5xl font-bold uppercase text-yellow-400">
+      <div className="fade-in spotlight border-4 border-yellow-400 p-8 rounded-2xl bg-black bg-opacity-60 w-full max-w-[420px] shadow-xl space-y-6">
+        <h2 className="text-5xl font-extrabold text-yellow-400 text-center tracking-wide">
           {place}
         </h2>
-        <div className="text-4xl font-mono text-white">
-          Ticket: {winner.ticketCode}
+
+        <div className="text-center">
+          <div className="text-lg text-gray-300 uppercase tracking-wide">
+            Ticket Number
+          </div>
+          <div className="text-4xl font-mono font-bold text-white mt-1">
+            {winner.ticketCode}
+          </div>
         </div>
-        <div className="text-3xl text-white">Name: {winner.order.name}</div>
-        <div className="text-2xl text-gray-300">
-          Email: {winner.order.email}
-        </div>
-        <div className="text-2xl text-gray-300">
-          Contact: {winner.order.contactNo}
-        </div>
-        <div className="text-2xl text-gray-300">
-          Event: {winner.order.event.title}
-        </div>
-        <div className="text-2xl text-gray-300">
-          Venue: {winner.order.event.venue}
+
+        <div className="h-[1px] bg-gray-700 w-full" />
+
+        <div className="space-y-3 text-xl">
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-400">Name:</span>
+            <span className="text-white font-medium text-right max-w-[220px] break-words">
+              {winner.order.name}
+            </span>
+          </div>
+
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-400">Email:</span>
+            <span className="text-white font-medium text-right max-w-[220px] break-words">
+              {winner.order.email}
+            </span>
+          </div>
+
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-400">Contact:</span>
+            <span className="text-white font-medium text-right max-w-[220px] break-words">
+              {winner.order.contactNo}
+            </span>
+          </div>
+
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-400">Event:</span>
+            <span className="text-white font-medium text-right max-w-[220px] break-words">
+              {winner.order.event.title}
+            </span>
+          </div>
+
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-400">Venue:</span>
+            <span className="text-white font-medium text-right max-w-[220px] break-words">
+              {winner.order.event.venue}
+            </span>
+          </div>
         </div>
       </div>
     );
@@ -131,7 +173,6 @@ export default function RandomRafflePage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-black text-white overflow-hidden relative pb-40">
-      {/* FIXED BACK BUTTON */}
       <button
         onClick={() => router.push("/admin/raffle")}
         className="fixed top-6 left-6 px-6 py-3 bg-gray-700 hover:bg-gray-800 text-white rounded-lg text-xl font-semibold z-50"
@@ -140,10 +181,9 @@ export default function RandomRafflePage() {
       </button>
 
       <h1 className="text-6xl font-extrabold text-yellow-400 mt-10 mb-10">
-        Random Raffle Draw
+        Raffle Draw
       </h1>
 
-      {/* DATE RANGE UI */}
       <div
         className={`p-6 rounded-xl mb-10 space-y-4 shadow-lg transition-all duration-300 
         ${useDateRange ? "bg-white border-4 border-yellow-400" : "bg-white border border-gray-300"}`}
@@ -182,33 +222,56 @@ export default function RandomRafflePage() {
         )}
       </div>
 
-      {/* Fade-in animation keyframes */}
       <style jsx>{`
-        .animate-fadeIn {
-          animation: fadeIn 0.4s ease-out;
+        .fade-in {
+          animation: fadeIn 0.6s ease-out forwards;
         }
+
         @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translateY(6px);
+            transform: translateY(20px) scale(0.98);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
           }
+        }
+
+        .spotlight {
+          position: relative;
+        }
+
+        .spotlight::before {
+          content: "";
+          position: absolute;
+          top: -40px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 260px;
+          height: 260px;
+          background: radial-gradient(
+            circle,
+            rgba(255, 255, 200, 0.25),
+            transparent 70%
+          );
+          z-index: -1;
+          filter: blur(20px);
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.4s ease-out;
         }
       `}</style>
 
-      {/* RESULTS */}
       {showResults && (
-        <div className="w-full flex flex-wrap justify-center items-start gap-10 mt-10 px-10">
+        <div className="fade-in w-full flex flex-wrap justify-center items-start gap-10 mt-10 px-10">
           <div>{renderWinner("3rd Place", winners[2] ?? null)}</div>
           <div>{renderWinner("1st Place", winners[0] ?? null)}</div>
           <div>{renderWinner("2nd Place", winners[1] ?? null)}</div>
         </div>
       )}
 
-      {/* REVEAL FLOW */}
       {!showResults && (
         <>
           {showThird && step === 1 && (
@@ -243,22 +306,51 @@ export default function RandomRafflePage() {
         </>
       )}
 
-      {/* BUTTONS */}
+      {!animating && !showResults && step === 3 && (
+        <button
+          onClick={async () => {
+            setShowResults(true);
+            confettiRain();
+
+            await fetch("/api/raffle/random/save", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                eventName: winners[0]?.order?.event?.title ?? null,
+
+                firstTicket: winners[0]?.ticketCode,
+                firstName: winners[0]?.order?.name,
+                firstEmail: winners[0]?.order?.email,
+                firstContact: winners[0]?.order?.contactNo,
+
+                secondTicket: winners[1]?.ticketCode,
+                secondName: winners[1]?.order?.name,
+                secondEmail: winners[1]?.order?.email,
+                secondContact: winners[1]?.order?.contactNo,
+
+                thirdTicket: winners[2]?.ticketCode,
+                thirdName: winners[2]?.order?.name,
+                thirdEmail: winners[2]?.order?.email,
+                thirdContact: winners[2]?.order?.contactNo,
+
+                usedDateRange: useDateRange,
+                startDate: useDateRange ? fromDate : null,
+                endDate: useDateRange ? toDate : null,
+              }),
+            });
+          }}
+          className="px-10 py-6 bg-green-400 text-black text-3xl font-bold rounded-xl hover:bg-green-300 mt-10"
+        >
+          Show Results
+        </button>
+      )}
+
       {!animating && !showResults && step < 3 && (
         <button
           onClick={startReveal}
           className="px-10 py-6 bg-yellow-400 text-black text-3xl font-bold rounded-xl hover:bg-yellow-300 mt-10"
         >
           Reveal Next Winner
-        </button>
-      )}
-
-      {!animating && step === 3 && !showResults && (
-        <button
-          onClick={() => setShowResults(true)}
-          className="px-10 py-6 bg-green-400 text-black text-3xl font-bold rounded-xl hover:bg-green-300 mt-10"
-        >
-          Show Results
         </button>
       )}
     </div>

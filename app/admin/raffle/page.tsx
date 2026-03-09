@@ -12,7 +12,7 @@ export default function AdminRaffleMenu() {
       <div className="flex flex-col gap-6 w-full max-w-sm">
         {/* Manual Raffle */}
         <button
-          onClick={() => router.push("/admin/raffle/management")}
+          onClick={() => router.push("/admin/raffle/manual")}
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-4 rounded-lg text-xl font-semibold"
         >
           Raffle Management

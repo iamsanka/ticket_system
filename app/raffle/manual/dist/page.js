@@ -39,6 +39,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var react_1 = require("react");
 var navigation_1 = require("next/navigation");
+var confetti_1 = require("@/lib/confetti");
 function ManualRafflePublicPage() {
     var _a, _b, _c, _d, _e, _f;
     var router = navigation_1.useRouter();
@@ -82,12 +83,18 @@ function ManualRafflePublicPage() {
         setTimeout(function () {
             clearInterval(interval);
             setAnimating(false);
-            if (step === 0)
+            if (step === 0) {
                 setShowThird(true);
-            if (step === 1)
+                confetti_1.confettiSide();
+            }
+            if (step === 1) {
                 setShowSecond(true);
-            if (step === 2)
+                confetti_1.confettiSide();
+            }
+            if (step === 2) {
                 setShowFirst(true);
+                confetti_1.confettiBurst();
+            }
             setStep(function (prev) { return prev + 1; });
         }, 7000);
     }
@@ -99,26 +106,28 @@ function ManualRafflePublicPage() {
     function renderWinner(place, winner) {
         if (!winner)
             return null;
-        return (React.createElement("div", { className: "border-4 border-yellow-400 p-8 rounded-xl text-center space-y-4 bg-black bg-opacity-60 w-full max-w-[380px]" },
-            React.createElement("h2", { className: "text-5xl font-bold uppercase text-yellow-400" }, place),
-            React.createElement("div", { className: "text-4xl font-mono text-white" },
-                "Ticket: ",
-                winner.ticketCode),
-            React.createElement("div", { className: "text-3xl text-white" },
-                "Name: ",
-                winner.order.name),
-            React.createElement("div", { className: "text-2xl text-gray-300" },
-                "Email: ",
-                winner.order.email),
-            React.createElement("div", { className: "text-2xl text-gray-300" },
-                "Contact: ",
-                winner.order.contactNo),
-            React.createElement("div", { className: "text-2xl text-gray-300" },
-                "Event: ",
-                winner.order.event.title),
-            React.createElement("div", { className: "text-2xl text-gray-300" },
-                "Venue: ",
-                winner.order.event.venue)));
+        return (React.createElement("div", { className: "fade-in spotlight border-4 border-yellow-400 p-8 rounded-2xl bg-black bg-opacity-60 w-full max-w-[420px] shadow-xl space-y-6" },
+            React.createElement("h2", { className: "text-5xl font-extrabold text-yellow-400 text-center tracking-wide" }, place),
+            React.createElement("div", { className: "text-center" },
+                React.createElement("div", { className: "text-lg text-gray-300 uppercase tracking-wide" }, "Ticket Number"),
+                React.createElement("div", { className: "text-4xl font-mono font-bold text-white mt-1" }, winner.ticketCode)),
+            React.createElement("div", { className: "h-[1px] bg-gray-700 w-full" }),
+            React.createElement("div", { className: "space-y-3 text-xl" },
+                React.createElement("div", { className: "flex justify-between gap-4" },
+                    React.createElement("span", { className: "text-gray-400" }, "Name:"),
+                    React.createElement("span", { className: "text-white font-medium text-right max-w-[220px] break-words" }, winner.order.name)),
+                React.createElement("div", { className: "flex justify-between gap-4" },
+                    React.createElement("span", { className: "text-gray-400" }, "Email:"),
+                    React.createElement("span", { className: "text-white font-medium text-right max-w-[220px] break-words" }, winner.order.email)),
+                React.createElement("div", { className: "flex justify-between gap-4" },
+                    React.createElement("span", { className: "text-gray-400" }, "Contact:"),
+                    React.createElement("span", { className: "text-white font-medium text-right max-w-[220px] break-words" }, winner.order.contactNo)),
+                React.createElement("div", { className: "flex justify-between gap-4" },
+                    React.createElement("span", { className: "text-gray-400" }, "Event:"),
+                    React.createElement("span", { className: "text-white font-medium text-right max-w-[220px] break-words" }, winner.order.event.title)),
+                React.createElement("div", { className: "flex justify-between gap-4" },
+                    React.createElement("span", { className: "text-gray-400" }, "Venue:"),
+                    React.createElement("span", { className: "text-white font-medium text-right max-w-[220px] break-words" }, winner.order.event.venue)))));
     }
     function renderAnimation(place) {
         return (React.createElement("div", { className: "text-center space-y-6 animate-pulse" },
@@ -129,7 +138,8 @@ function ManualRafflePublicPage() {
     return (React.createElement("div", { className: "min-h-screen flex flex-col items-center bg-black text-white overflow-hidden relative pb-40" },
         React.createElement("button", { onClick: function () { return router.push("/admin/raffle"); }, className: "fixed top-6 left-6 px-6 py-3 bg-gray-700 hover:bg-gray-800 text-white rounded-lg text-xl font-semibold z-50" }, "\u2190 Back"),
         React.createElement("h1", { className: "text-6xl font-extrabold text-yellow-400 mt-10 mb-16" }, "Raffle Draw"),
-        showResults && (React.createElement("div", { className: "w-full flex flex-wrap justify-center items-start gap-10 mt-20 px-10" },
+        React.createElement("style", { jsx: true }, "\n        .fade-in {\n          animation: fadeIn 0.6s ease-out forwards;\n        }\n        @keyframes fadeIn {\n          from {\n            opacity: 0;\n            transform: translateY(20px) scale(0.98);\n          }\n          to {\n            opacity: 1;\n            transform: translateY(0) scale(1);\n          }\n        }\n        .spotlight {\n          position: relative;\n        }\n        .spotlight::before {\n          content: \"\";\n          position: absolute;\n          top: -40px;\n          left: 50%;\n          transform: translateX(-50%);\n          width: 260px;\n          height: 260px;\n          background: radial-gradient(\n            circle,\n            rgba(255, 255, 200, 0.25),\n            transparent 70%\n          );\n          z-index: -1;\n          filter: blur(20px);\n        }\n      "),
+        showResults && (React.createElement("div", { className: "fade-in w-full flex flex-wrap justify-center items-start gap-10 mt-20 px-10" },
             React.createElement("div", null, renderWinner("3rd Place", (_a = winners === null || winners === void 0 ? void 0 : winners.third) !== null && _a !== void 0 ? _a : null)),
             React.createElement("div", null, renderWinner("1st Place", (_b = winners === null || winners === void 0 ? void 0 : winners.first) !== null && _b !== void 0 ? _b : null)),
             React.createElement("div", null, renderWinner("2nd Place", (_c = winners === null || winners === void 0 ? void 0 : winners.second) !== null && _c !== void 0 ? _c : null)))),
@@ -143,6 +153,9 @@ function ManualRafflePublicPage() {
                     ? "2nd Place"
                     : "1st Place"))))),
         !animating && !showResults && step < 3 && (React.createElement("button", { onClick: startReveal, className: "px-10 py-6 bg-yellow-400 text-black text-3xl font-bold rounded-xl hover:bg-yellow-300 mt-10" }, "Reveal Next Winner")),
-        !animating && step === 3 && !showResults && (React.createElement("button", { onClick: function () { return setShowResults(true); }, className: "px-10 py-6 bg-green-400 text-black text-3xl font-bold rounded-xl hover:bg-green-300 mt-10" }, "Show Results"))));
+        !animating && step === 3 && !showResults && (React.createElement("button", { onClick: function () {
+                setShowResults(true);
+                confetti_1.confettiRain();
+            }, className: "px-10 py-6 bg-green-400 text-black text-3xl font-bold rounded-xl hover:bg-green-300 mt-10" }, "Show Results"))));
 }
 exports["default"] = ManualRafflePublicPage;
