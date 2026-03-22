@@ -47,8 +47,8 @@ function RootLayout(_a) {
     var children = _a.children;
     return (React.createElement("html", { lang: "en" },
         React.createElement("head", null,
-            React.createElement(script_1["default"], { async: true, src: "https://www.googletagmanager.com/gtag/js?id=G-6SPJX9EB45", strategy: "afterInteractive" }),
-            React.createElement(script_1["default"], { id: "ga-setup", strategy: "afterInteractive" }, "\n            window.dataLayer = window.dataLayer || [];\n            function gtag(){dataLayer.push(arguments);}\n            gtag('js', new Date());\n            gtag('config', 'G-6SPJX9EB45');\n          ")),
+            React.createElement(script_1["default"], { async: true, src: "https://www.googletagmanager.com/gtag/js?id=G-YHFX8X9ZX3", strategy: "afterInteractive" }),
+            React.createElement(script_1["default"], { id: "ga-setup", strategy: "afterInteractive" }, "\n            window.dataLayer = window.dataLayer || [];\n            function gtag(){dataLayer.push(arguments);}\n            gtag('js', new Date());\n            gtag('config', 'G-YHFX8X9ZX3');\n          ")),
         React.createElement("body", { suppressHydrationWarning: true, className: geistSans.variable + " " + geistMono.variable + " antialiased bg-white text-black" },
             children,
             React.createElement(Footer_1["default"], null))));
