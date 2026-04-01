@@ -19,7 +19,6 @@ export default function BookingForm({ eventId }: { eventId: string }) {
       .then((data) => setAvailability(data));
   }, []);
 
-  // Email validation function
   function validateEmail(email: string) {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
@@ -31,7 +30,6 @@ export default function BookingForm({ eventId }: { eventId: string }) {
 
     const email = String(formData.get("email") || "");
 
-    // Validate email before submitting
     if (!validateEmail(email)) {
       setEmailError("Please enter a valid email address.");
       return;
@@ -45,9 +43,9 @@ export default function BookingForm({ eventId }: { eventId: string }) {
       name: formData.get("name"),
       email,
       contactNo: formData.get("contact"),
-      adultLounge: Number(formData.get("adultLounge")),
+      adultLounge: 0, // 🔒 FORCE DISABLED
       adultStandard: Number(formData.get("adultStandard")),
-      childLounge: Number(formData.get("childLounge")),
+      childLounge: 0, // 🔒 FORCE DISABLED
       childStandard: Number(formData.get("childStandard")),
       paymentMethod: method,
     };
@@ -125,22 +123,38 @@ export default function BookingForm({ eventId }: { eventId: string }) {
       {/* Adults */}
       <div className="border p-4 rounded-md">
         <h3 className="font-semibold text-lg mb-3">Adults</h3>
-        <TicketCounter
-          label="Taprobane Lounge"
-          name="adultLounge"
-          max={availability?.adultLoungeRemaining ?? 10}
-          disabled={availability?.adultLoungeRemaining === 0}
-        />
-        {availability?.adultLoungeRemaining === 0 && (
-          <p className="text-sm text-red-600 mt-1">Adult Lounge is sold out.</p>
-        )}
+
+        {/* 🔒 Lounge Disabled */}
+        <div className="opacity-50">
+          <TicketCounter
+            label="Taprobane Lounge"
+            name="adultLounge"
+            max={0}
+            disabled={true}
+          />
+          <p className="text-sm text-red-600 mt-1">Adult Lounge is Sold Out.</p>
+        </div>
+
+        {/* Standard Active */}
         <TicketCounter label="Standard" name="adultStandard" />
       </div>
 
       {/* Kids */}
       <div className="border p-4 rounded-md">
         <h3 className="font-semibold text-lg mb-3">Kids</h3>
-        <TicketCounter label="Taprobane Lounge" name="childLounge" />
+
+        {/* 🔒 Lounge Disabled */}
+        <div className="opacity-50">
+          <TicketCounter
+            label="Taprobane Lounge"
+            name="childLounge"
+            max={0}
+            disabled={true}
+          />
+          <p className="text-sm text-red-600 mt-1">Child Lounge is Sold Out.</p>
+        </div>
+
+        {/* Standard Active */}
         <TicketCounter label="Standard" name="childStandard" />
       </div>
 
@@ -150,7 +164,6 @@ export default function BookingForm({ eventId }: { eventId: string }) {
           Payment Method
         </label>
         <div className="space-y-3">
-          {/* Card / Klarna */}
           <button
             type="button"
             onClick={() => handlePayment("stripe")}
@@ -172,7 +185,6 @@ export default function BookingForm({ eventId }: { eventId: string }) {
             <span className="font-semibold">Card / Klarna</span>
           </button>
 
-          {/* Edenred */}
           <button
             type="button"
             onClick={() => handlePayment("edenred")}
@@ -181,11 +193,9 @@ export default function BookingForm({ eventId }: { eventId: string }) {
               loading ? "opacity-50 cursor-wait" : "hover:bg-red-50"
             }`}
           >
-            {/* SVG omitted for brevity */}
             Edenred
           </button>
 
-          {/* ePassi */}
           <button
             type="button"
             onClick={() => handlePayment("epassi")}
@@ -194,7 +204,6 @@ export default function BookingForm({ eventId }: { eventId: string }) {
               loading ? "opacity-50 cursor-wait" : "hover:bg-purple-50"
             }`}
           >
-            {/* SVG omitted for brevity */}
             ePassi
           </button>
         </div>

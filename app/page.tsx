@@ -60,16 +60,13 @@ export default async function HomePage() {
                   Adult Tickets
                 </h3>
 
-                <div className="flex justify-between px-4">
+                {/* Lounge Disabled */}
+                <div className="flex justify-between px-4 opacity-50">
                   <p>Taprobane Lounge</p>
-                  <p>
-                    <span className="line-through text-red-600 mr-2">€90</span>
-                    <span className="font-bold text-green-700">
-                      €{event.adultLoungePrice / 100}
-                    </span>
-                  </p>
+                  <p className="font-bold text-red-600">Sold Out</p>
                 </div>
 
+                {/* Standard Active */}
                 <div className="flex justify-between px-4">
                   <p>Standard</p>
                   <p>
@@ -87,16 +84,13 @@ export default async function HomePage() {
                   Child Tickets
                 </h3>
 
-                <div className="flex justify-between px-4">
+                {/* Lounge Disabled */}
+                <div className="flex justify-between px-4 opacity-50">
                   <p>Taprobane Lounge</p>
-                  <p>
-                    <span className="line-through text-red-600 mr-2">€50</span>
-                    <span className="font-bold text-green-700">
-                      €{event.childLoungePrice / 100}
-                    </span>
-                  </p>
+                  <p className="font-bold text-red-600">Sold Out</p>
                 </div>
 
+                {/* Standard Active */}
                 <div className="flex justify-between px-4">
                   <p>Standard</p>
                   <p>

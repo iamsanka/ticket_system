@@ -52,34 +52,45 @@ export default async function EventPage({
           <strong>Venue:</strong> {event.venue}
         </p>
 
+        {/* Ticket Prices */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-black text-lg shadow-md mb-10">
           <h2 className="text-2xl font-bold text-center mb-6">
             🎟️ Ticket Prices
           </h2>
 
           <div className="space-y-6">
+            {/* Adult Tickets */}
             <div>
               <h3 className="text-xl font-semibold mb-2 text-center">
                 👨 Adult Tickets
               </h3>
-              <div className="flex justify-between px-4">
+
+              {/* Lounge Disabled */}
+              <div className="flex justify-between px-4 opacity-50">
                 <p>Taprobane Lounge</p>
-                <p>€{event.adultLoungePrice / 100}</p>
+                <p className="font-bold text-red-600">Sold Out</p>
               </div>
+
+              {/* Standard Active */}
               <div className="flex justify-between px-4">
                 <p>Standard</p>
                 <p>€{event.adultStandardPrice / 100}</p>
               </div>
             </div>
 
+            {/* Child Tickets */}
             <div>
               <h3 className="text-xl font-semibold mb-2 text-center">
                 🧒 Child Tickets
               </h3>
-              <div className="flex justify-between px-4">
+
+              {/* Lounge Disabled */}
+              <div className="flex justify-between px-4 opacity-50">
                 <p>Taprobane Lounge</p>
-                <p>€{event.childLoungePrice / 100}</p>
+                <p className="font-bold text-red-600">Sold Out</p>
               </div>
+
+              {/* Standard Active */}
               <div className="flex justify-between px-4">
                 <p>Standard</p>
                 <p>€{event.childStandardPrice / 100}</p>
@@ -88,6 +99,7 @@ export default async function EventPage({
           </div>
         </div>
 
+        {/* Booking Form */}
         <BookingForm eventId={event.id} />
       </div>
     </main>
