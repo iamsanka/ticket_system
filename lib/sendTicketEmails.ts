@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { generateInvoiceImage } from "./generateInvoiceImage";
 import { invoiceImageToPdf } from "./invoiceImageToPdf";
+import { generateInvoiceImageForAdmin } from "./generateInvoiceImageForAdmin";
 
 export async function sendTicketEmail({
   to,
@@ -31,7 +32,10 @@ export async function sendTicketEmail({
     };
   });
 
-  const invoiceImageBuffer = await generateInvoiceImage(order, tickets);
+  const invoiceImageBuffer =
+  order.status === "manual"
+    ? await generateInvoiceImageForAdmin(order, tickets)
+    : await generateInvoiceImage(order, tickets);
   const invoicePdfBuffer = await invoiceImageToPdf(invoiceImageBuffer);
 
   const formattedDate = new Date(order.event.date).toLocaleDateString("en-GB", {
