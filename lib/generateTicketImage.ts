@@ -1,10 +1,10 @@
-import { createCanvas, loadImage, registerFont } from "canvas";
+import { createCanvas, loadImage, GlobalFonts } from "@napi-rs/canvas";
 import path from "path";
 
-// Register font
-registerFont(
+// Register font (napi-rs uses GlobalFonts)
+GlobalFonts.registerFromPath(
   path.join(process.cwd(), "public", "fonts", "Geist-Regular.ttf"),
-  { family: "Geist" }
+  "Geist"
 );
 
 // Format date like "24th April 2026"
@@ -130,6 +130,7 @@ export async function generateBrandedTicket({
     vipGradient.addColorStop(1, "#B8860B");
 
     ctx.fillStyle = vipGradient;
+    ctx.beginPath();
     ctx.roundRect(badgeX, badgeY, badgeWidth, badgeHeight, 12);
     ctx.fill();
 
