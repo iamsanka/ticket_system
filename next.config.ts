@@ -1,9 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  webpack: (config) => {
+    return config; // enabling webpack mode
+  },
   experimental: {
-    turbo: {
-      use: false
-    }
+    serverMinification: false
   }
 };
 
