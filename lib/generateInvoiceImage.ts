@@ -1,11 +1,11 @@
-import { createCanvas, loadImage, GlobalFonts } from "@napi-rs/canvas";
+import { createCanvas, loadImage, registerFont } from "canvas";
 import path from "path";
 import { generateInvoice } from "./generateInvoice";
 
 // Register Geist font
-GlobalFonts.registerFromPath(
+registerFont(
   path.join(process.cwd(), "public", "fonts", "Geist-Regular.ttf"),
-  "Geist"
+  { family: "Geist" }
 );
 
 type Ticket = {

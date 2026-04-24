@@ -1,10 +1,10 @@
-import { createCanvas, loadImage, GlobalFonts } from "@napi-rs/canvas";
+import { createCanvas, loadImage, registerFont } from "canvas";
 import path from "path";
 
-// Register font (napi-rs uses GlobalFonts)
-GlobalFonts.registerFromPath(
+// Register Geist font
+registerFont(
   path.join(process.cwd(), "public", "fonts", "Geist-Regular.ttf"),
-  "Geist"
+  { family: "Geist" }
 );
 
 // Format date like "24th April 2026"
