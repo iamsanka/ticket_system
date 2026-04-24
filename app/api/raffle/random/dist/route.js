@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -35,31 +46,50 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
 exports.__esModule = true;
 exports.GET = void 0;
 var server_1 = require("next/server");
-var prisma_1 = require("@/lib/prisma"); // ✔ correct import
+var prisma_1 = require("@/lib/prisma");
 function GET(req) {
     return __awaiter(this, void 0, void 0, function () {
-        var searchParams, from, to, tickets, groups_1, orderGroups, shuffled, winners, err_1;
+        var searchParams, from, to, pastWinners, pastWinnerTicketCodes, excludedTickets, excludedOrderIds, baseWhere, tickets, groups_1, orderGroups, shuffled, winners, err_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 5, , 6]);
+                    _a.trys.push([0, 7, , 8]);
                     searchParams = new URL(req.url).searchParams;
                     from = searchParams.get("from");
                     to = searchParams.get("to");
-                    tickets = void 0;
-                    if (!(from && to)) return [3 /*break*/, 2];
+                    return [4 /*yield*/, prisma_1.prisma.randomRaffleResult.findMany()];
+                case 1:
+                    pastWinners = _a.sent();
+                    pastWinnerTicketCodes = __spreadArrays(pastWinners.map(function (w) { return w.firstTicket; }), pastWinners.map(function (w) { return w.secondTicket; }), pastWinners.map(function (w) { return w.thirdTicket; })).filter(Boolean);
                     return [4 /*yield*/, prisma_1.prisma.ticket.findMany({
-                            where: {
-                                order: {
+                            where: { ticketCode: { "in": pastWinnerTicketCodes } },
+                            select: { orderId: true }
+                        })];
+                case 2:
+                    excludedTickets = _a.sent();
+                    excludedOrderIds = excludedTickets.map(function (t) { return t.orderId; });
+                    baseWhere = {
+                        orderId: { notIn: excludedOrderIds }
+                    };
+                    tickets = void 0;
+                    if (!(from && to)) return [3 /*break*/, 4];
+                    return [4 /*yield*/, prisma_1.prisma.ticket.findMany({
+                            where: __assign(__assign({}, baseWhere), { order: {
                                     createdAt: {
                                         gte: new Date(from),
                                         lte: new Date(to)
                                     }
-                                }
-                            },
+                                } }),
                             include: {
                                 order: {
                                     include: {
@@ -68,10 +98,11 @@ function GET(req) {
                                 }
                             }
                         })];
-                case 1:
+                case 3:
                     tickets = _a.sent();
-                    return [3 /*break*/, 4];
-                case 2: return [4 /*yield*/, prisma_1.prisma.ticket.findMany({
+                    return [3 /*break*/, 6];
+                case 4: return [4 /*yield*/, prisma_1.prisma.ticket.findMany({
+                        where: baseWhere,
                         include: {
                             order: {
                                 include: {
@@ -80,13 +111,12 @@ function GET(req) {
                             }
                         }
                     })];
-                case 3:
-                    // ✔ No date range → return all tickets
+                case 5:
                     tickets = _a.sent();
-                    _a.label = 4;
-                case 4:
+                    _a.label = 6;
+                case 6:
                     if (!tickets || tickets.length === 0) {
-                        return [2 /*return*/, server_1.NextResponse.json({ error: "No tickets found." }, { status: 404 })];
+                        return [2 /*return*/, server_1.NextResponse.json({ error: "No eligible tickets found." }, { status: 404 })];
                     }
                     groups_1 = {};
                     tickets.forEach(function (t) {
@@ -96,7 +126,7 @@ function GET(req) {
                     });
                     orderGroups = Object.values(groups_1);
                     if (orderGroups.length < 3) {
-                        return [2 /*return*/, server_1.NextResponse.json({ error: "Not enough unique orders to pick 3 winners." }, { status: 400 })];
+                        return [2 /*return*/, server_1.NextResponse.json({ error: "Not enough unique eligible orders to pick 3 winners." }, { status: 400 })];
                     }
                     shuffled = orderGroups.sort(function () { return Math.random() - 0.5; });
                     winners = shuffled.slice(0, 3).map(function (group) {
@@ -105,15 +135,16 @@ function GET(req) {
                     return [2 /*return*/, server_1.NextResponse.json({
                             tickets: tickets,
                             winners: winners,
+                            excludedOrderIds: excludedOrderIds,
                             count: tickets.length,
                             uniqueOrders: orderGroups.length,
                             dateRangeUsed: !!(from && to)
                         })];
-                case 5:
+                case 7:
                     err_1 = _a.sent();
                     console.error("Random raffle error:", err_1);
                     return [2 /*return*/, server_1.NextResponse.json({ error: "Server error while generating random winners." }, { status: 500 })];
-                case 6: return [2 /*return*/];
+                case 8: return [2 /*return*/];
             }
         });
     });

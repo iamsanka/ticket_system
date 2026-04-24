@@ -105,7 +105,7 @@ export default function RandomRafflePage() {
     if (!winner) return null;
 
     return (
-      <div className="fade-in spotlight border-4 border-yellow-400 p-8 rounded-2xl bg-black bg-opacity-60 w-full max-w-[420px] shadow-xl space-y-6">
+      <div className="fade-in spotlight border-4 border-yellow-400 p-8 rounded-2xl bg-black bg-opacity-60 w-full max-w-105 shadow-xl space-y-6">
         <h2 className="text-5xl font-extrabold text-yellow-400 text-center tracking-wide">
           {place}
         </h2>
@@ -119,40 +119,40 @@ export default function RandomRafflePage() {
           </div>
         </div>
 
-        <div className="h-[1px] bg-gray-700 w-full" />
+        <div className="h-px bg-gray-700 w-full" />
 
         <div className="space-y-3 text-xl">
           <div className="flex justify-between gap-4">
             <span className="text-gray-400">Name:</span>
-            <span className="text-white font-medium text-right max-w-[220px] break-words">
+            <span className="text-white font-medium text-right max-w-55 wrap-break-word">
               {winner.order.name}
             </span>
           </div>
 
           <div className="flex justify-between gap-4">
             <span className="text-gray-400">Email:</span>
-            <span className="text-white font-medium text-right max-w-[220px] break-words">
+            <span className="text-white font-medium text-right max-w-55 wrap-break-word">
               {winner.order.email}
             </span>
           </div>
 
           <div className="flex justify-between gap-4">
             <span className="text-gray-400">Contact:</span>
-            <span className="text-white font-medium text-right max-w-[220px] break-words">
+            <span className="text-white font-medium text-right max-w-55 wrap-break-word">
               {winner.order.contactNo}
             </span>
           </div>
 
           <div className="flex justify-between gap-4">
             <span className="text-gray-400">Event:</span>
-            <span className="text-white font-medium text-right max-w-[220px] break-words">
+            <span className="text-white font-medium text-right max-w-55 wrap-break-word">
               {winner.order.event.title}
             </span>
           </div>
 
           <div className="flex justify-between gap-4">
             <span className="text-gray-400">Venue:</span>
-            <span className="text-white font-medium text-right max-w-[220px] break-words">
+            <span className="text-white font-medium text-right max-w-55 wrap-break-word">
               {winner.order.event.venue}
             </span>
           </div>
@@ -293,7 +293,7 @@ export default function RandomRafflePage() {
           )}
 
           {animating && (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 pointer-events-none w-[400px]">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 pointer-events-none w-100">
               {renderAnimation(
                 step === 0
                   ? "3rd Place"

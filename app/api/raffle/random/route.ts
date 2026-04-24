@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma"; // ✔ correct import
+import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
   try {
@@ -8,12 +8,35 @@ export async function GET(req: Request) {
     const from = searchParams.get("from");
     const to = searchParams.get("to");
 
+    // 1️⃣ Load all past winners (ticket codes)
+    const pastWinners = await prisma.randomRaffleResult.findMany();
+
+    const pastWinnerTicketCodes = [
+      ...pastWinners.map((w) => w.firstTicket),
+      ...pastWinners.map((w) => w.secondTicket),
+      ...pastWinners.map((w) => w.thirdTicket),
+    ].filter(Boolean);
+
+    // 2️⃣ Convert ticketCodes → orderIds
+    const excludedTickets = await prisma.ticket.findMany({
+      where: { ticketCode: { in: pastWinnerTicketCodes } },
+      select: { orderId: true },
+    });
+
+    const excludedOrderIds = excludedTickets.map((t) => t.orderId);
+
+    // 3️⃣ Base filter: exclude past winning orders
+    const baseWhere = {
+      orderId: { notIn: excludedOrderIds },
+    };
+
     let tickets;
 
-    // ✔ If date range is enabled
+    // 4️⃣ Apply date range if provided
     if (from && to) {
       tickets = await prisma.ticket.findMany({
         where: {
+          ...baseWhere,
           order: {
             createdAt: {
               gte: new Date(from),
@@ -30,8 +53,8 @@ export async function GET(req: Request) {
         },
       });
     } else {
-      // ✔ No date range → return all tickets
       tickets = await prisma.ticket.findMany({
+        where: baseWhere,
         include: {
           order: {
             include: {
@@ -43,12 +66,15 @@ export async function GET(req: Request) {
     }
 
     if (!tickets || tickets.length === 0) {
-      return NextResponse.json({ error: "No tickets found." }, { status: 404 });
+      return NextResponse.json(
+        { error: "No eligible tickets found." },
+        { status: 404 }
+      );
     }
 
-    // ✔ Group tickets by orderId
+    // 5️⃣ Group tickets by orderId
     const groups: Record<string, any[]> = {};
-    tickets.forEach((t: any) => {
+    tickets.forEach((t) => {
       if (!groups[t.orderId]) groups[t.orderId] = [];
       groups[t.orderId].push(t);
     });
@@ -57,15 +83,15 @@ export async function GET(req: Request) {
 
     if (orderGroups.length < 3) {
       return NextResponse.json(
-        { error: "Not enough unique orders to pick 3 winners." },
+        { error: "Not enough unique eligible orders to pick 3 winners." },
         { status: 400 }
       );
     }
 
-    // ✔ Shuffle order groups
+    // 6️⃣ Shuffle order groups
     const shuffled = orderGroups.sort(() => Math.random() - 0.5);
 
-    // ✔ Pick 1 ticket from each of the first 3 groups
+    // 7️⃣ Pick 1 ticket from each of the first 3 groups
     const winners = shuffled.slice(0, 3).map((group: any[]) => {
       return group[Math.floor(Math.random() * group.length)];
     });
@@ -73,6 +99,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       tickets,
       winners,
+      excludedOrderIds,
       count: tickets.length,
       uniqueOrders: orderGroups.length,
       dateRangeUsed: !!(from && to),

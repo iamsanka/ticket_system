@@ -132,28 +132,28 @@ function RandomRafflePage() {
     function renderWinner(place, winner) {
         if (!winner)
             return null;
-        return (React.createElement("div", { className: "fade-in spotlight border-4 border-yellow-400 p-8 rounded-2xl bg-black bg-opacity-60 w-full max-w-[420px] shadow-xl space-y-6" },
+        return (React.createElement("div", { className: "fade-in spotlight border-4 border-yellow-400 p-8 rounded-2xl bg-black bg-opacity-60 w-full max-w-105 shadow-xl space-y-6" },
             React.createElement("h2", { className: "text-5xl font-extrabold text-yellow-400 text-center tracking-wide" }, place),
             React.createElement("div", { className: "text-center" },
                 React.createElement("div", { className: "text-lg text-gray-300 uppercase tracking-wide" }, "Ticket Number"),
                 React.createElement("div", { className: "text-4xl font-mono font-bold text-white mt-1" }, winner.ticketCode)),
-            React.createElement("div", { className: "h-[1px] bg-gray-700 w-full" }),
+            React.createElement("div", { className: "h-px bg-gray-700 w-full" }),
             React.createElement("div", { className: "space-y-3 text-xl" },
                 React.createElement("div", { className: "flex justify-between gap-4" },
                     React.createElement("span", { className: "text-gray-400" }, "Name:"),
-                    React.createElement("span", { className: "text-white font-medium text-right max-w-[220px] break-words" }, winner.order.name)),
+                    React.createElement("span", { className: "text-white font-medium text-right max-w-55 wrap-break-word" }, winner.order.name)),
                 React.createElement("div", { className: "flex justify-between gap-4" },
                     React.createElement("span", { className: "text-gray-400" }, "Email:"),
-                    React.createElement("span", { className: "text-white font-medium text-right max-w-[220px] break-words" }, winner.order.email)),
+                    React.createElement("span", { className: "text-white font-medium text-right max-w-55 wrap-break-word" }, winner.order.email)),
                 React.createElement("div", { className: "flex justify-between gap-4" },
                     React.createElement("span", { className: "text-gray-400" }, "Contact:"),
-                    React.createElement("span", { className: "text-white font-medium text-right max-w-[220px] break-words" }, winner.order.contactNo)),
+                    React.createElement("span", { className: "text-white font-medium text-right max-w-55 wrap-break-word" }, winner.order.contactNo)),
                 React.createElement("div", { className: "flex justify-between gap-4" },
                     React.createElement("span", { className: "text-gray-400" }, "Event:"),
-                    React.createElement("span", { className: "text-white font-medium text-right max-w-[220px] break-words" }, winner.order.event.title)),
+                    React.createElement("span", { className: "text-white font-medium text-right max-w-55 wrap-break-word" }, winner.order.event.title)),
                 React.createElement("div", { className: "flex justify-between gap-4" },
                     React.createElement("span", { className: "text-gray-400" }, "Venue:"),
-                    React.createElement("span", { className: "text-white font-medium text-right max-w-[220px] break-words" }, winner.order.event.venue)))));
+                    React.createElement("span", { className: "text-white font-medium text-right max-w-55 wrap-break-word" }, winner.order.event.venue)))));
     }
     function renderAnimation(place) {
         return (React.createElement("div", { className: "text-center space-y-6 animate-pulse" },
@@ -184,7 +184,7 @@ function RandomRafflePage() {
             showThird && step === 1 && (React.createElement("div", { className: "flex flex-col items-center mb-24" }, renderWinner("3rd Place", (_d = winners[2]) !== null && _d !== void 0 ? _d : null))),
             showSecond && step === 2 && (React.createElement("div", { className: "flex flex-col items-center mb-24" }, renderWinner("2nd Place", (_e = winners[1]) !== null && _e !== void 0 ? _e : null))),
             showFirst && step === 3 && (React.createElement("div", { className: "flex flex-col items-center mb-24" }, renderWinner("1st Place", (_f = winners[0]) !== null && _f !== void 0 ? _f : null))),
-            animating && (React.createElement("div", { className: "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 pointer-events-none w-[400px]" }, renderAnimation(step === 0
+            animating && (React.createElement("div", { className: "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 pointer-events-none w-100" }, renderAnimation(step === 0
                 ? "3rd Place"
                 : step === 1
                     ? "2nd Place"
