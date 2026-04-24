@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { confettiBurst, confettiSide, confettiRain } from "@/lib/confetti";
 
@@ -39,6 +39,10 @@ export default function RandomRafflePage() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
+  // 🔊 Sounds
+  const drumrollSound = useRef<HTMLAudioElement | null>(null);
+  const crowdSound = useRef<HTMLAudioElement | null>(null);
+
   async function loadTickets() {
     let url = "/api/raffle/random";
 
@@ -74,6 +78,9 @@ export default function RandomRafflePage() {
 
     setAnimating(true);
 
+    // 🔊 Start drumroll
+    drumrollSound.current?.play();
+
     const interval = setInterval(() => {
       setFakeCode("XX-" + Math.floor(100000 + Math.random() * 900000));
     }, 80);
@@ -81,6 +88,12 @@ export default function RandomRafflePage() {
     setTimeout(() => {
       clearInterval(interval);
       setAnimating(false);
+
+      // 🔇 Stop drumroll
+      if (drumrollSound.current) {
+        drumrollSound.current.pause();
+        drumrollSound.current.currentTime = 0;
+      }
 
       if (step === 0) {
         setShowThird(true);
@@ -173,6 +186,10 @@ export default function RandomRafflePage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-black text-white overflow-hidden relative pb-40">
+      {/* 🔊 Audio elements */}
+      <audio ref={drumrollSound} src="/sounds/drumroll.mp3" preload="auto" />
+      <audio ref={crowdSound} src="/sounds/crowd.mp3" preload="auto" />
+
       <button
         onClick={() => router.push("/admin/raffle")}
         className="fixed top-6 left-6 px-6 py-3 bg-gray-700 hover:bg-gray-800 text-white rounded-lg text-xl font-semibold z-50"
@@ -183,6 +200,11 @@ export default function RandomRafflePage() {
       <h1 className="text-6xl font-extrabold text-yellow-400 mt-10 mb-10">
         Raffle Draw
       </h1>
+
+      {/*  
+      ────────────────────────────────────────────────
+      DATE RANGE UI — HIDDEN BUT NOT REMOVED
+      ────────────────────────────────────────────────
 
       <div
         className={`p-6 rounded-xl mb-10 space-y-4 shadow-lg transition-all duration-300 
@@ -221,6 +243,7 @@ export default function RandomRafflePage() {
           </div>
         )}
       </div>
+      */}
 
       <style jsx>{`
         .fade-in {
@@ -311,6 +334,9 @@ export default function RandomRafflePage() {
           onClick={async () => {
             setShowResults(true);
             confettiRain();
+
+            // 🔊 Play crowd cheer
+            crowdSound.current?.play();
 
             await fetch("/api/raffle/random/save", {
               method: "POST",

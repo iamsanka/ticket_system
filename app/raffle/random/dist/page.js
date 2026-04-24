@@ -56,6 +56,9 @@ function RandomRafflePage() {
     var _r = react_1.useState(false), useDateRange = _r[0], setUseDateRange = _r[1];
     var _s = react_1.useState(""), fromDate = _s[0], setFromDate = _s[1];
     var _t = react_1.useState(""), toDate = _t[0], setToDate = _t[1];
+    // 🔊 Sounds
+    var drumrollSound = react_1.useRef(null);
+    var crowdSound = react_1.useRef(null);
     function loadTickets() {
         return __awaiter(this, void 0, void 0, function () {
             var url, res, data;
@@ -84,32 +87,40 @@ function RandomRafflePage() {
         });
     }
     function startReveal() {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var loaded, interval;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         if (!(step === 0)) return [3 /*break*/, 2];
                         return [4 /*yield*/, loadTickets()];
                     case 1:
-                        loaded = _a.sent();
+                        loaded = _b.sent();
                         if (!loaded || loaded.length === 0) {
                             alert("No tickets available for this draw.");
                             return [2 /*return*/];
                         }
-                        _a.label = 2;
+                        _b.label = 2;
                     case 2:
                         if (step === 1)
                             setShowThird(false);
                         if (step === 2)
                             setShowSecond(false);
                         setAnimating(true);
+                        // 🔊 Start drumroll
+                        (_a = drumrollSound.current) === null || _a === void 0 ? void 0 : _a.play();
                         interval = setInterval(function () {
                             setFakeCode("XX-" + Math.floor(100000 + Math.random() * 900000));
                         }, 80);
                         setTimeout(function () {
                             clearInterval(interval);
                             setAnimating(false);
+                            // 🔇 Stop drumroll
+                            if (drumrollSound.current) {
+                                drumrollSound.current.pause();
+                                drumrollSound.current.currentTime = 0;
+                            }
                             if (step === 0) {
                                 setShowThird(true);
                                 confetti_1.confettiSide();
@@ -162,19 +173,10 @@ function RandomRafflePage() {
             React.createElement("div", { className: "text-xl text-gray-400" }, "Drawing winner\u2026")));
     }
     return (React.createElement("div", { className: "min-h-screen flex flex-col items-center bg-black text-white overflow-hidden relative pb-40" },
+        React.createElement("audio", { ref: drumrollSound, src: "/sounds/drumroll.mp3", preload: "auto" }),
+        React.createElement("audio", { ref: crowdSound, src: "/sounds/crowd.mp3", preload: "auto" }),
         React.createElement("button", { onClick: function () { return router.push("/admin/raffle"); }, className: "fixed top-6 left-6 px-6 py-3 bg-gray-700 hover:bg-gray-800 text-white rounded-lg text-xl font-semibold z-50" }, "\u2190 Back"),
         React.createElement("h1", { className: "text-6xl font-extrabold text-yellow-400 mt-10 mb-10" }, "Raffle Draw"),
-        React.createElement("div", { className: "p-6 rounded-xl mb-10 space-y-4 shadow-lg transition-all duration-300 \n        " + (useDateRange ? "bg-white border-4 border-yellow-400" : "bg-white border border-gray-300") },
-            React.createElement("label", { className: "flex items-center gap-3 text-xl text-black" },
-                React.createElement("input", { type: "checkbox", checked: useDateRange, onChange: function (e) { return setUseDateRange(e.target.checked); } }),
-                "Enable Date Range"),
-            useDateRange && (React.createElement("div", { className: "flex gap-4 animate-fadeIn" },
-                React.createElement("div", { className: "flex flex-col" },
-                    React.createElement("label", { className: "text-sm text-gray-700" }, "From"),
-                    React.createElement("input", { type: "date", value: fromDate, onChange: function (e) { return setFromDate(e.target.value); }, className: "px-3 py-2 rounded border border-gray-400 bg-white text-black focus:ring-2 focus:ring-yellow-400" })),
-                React.createElement("div", { className: "flex flex-col" },
-                    React.createElement("label", { className: "text-sm text-gray-700" }, "To"),
-                    React.createElement("input", { type: "date", value: toDate, onChange: function (e) { return setToDate(e.target.value); }, className: "px-3 py-2 rounded border border-gray-400 bg-white text-black focus:ring-2 focus:ring-yellow-400" }))))),
         React.createElement("style", { jsx: true }, "\n        .fade-in {\n          animation: fadeIn 0.6s ease-out forwards;\n        }\n\n        @keyframes fadeIn {\n          from {\n            opacity: 0;\n            transform: translateY(20px) scale(0.98);\n          }\n          to {\n            opacity: 1;\n            transform: translateY(0) scale(1);\n          }\n        }\n\n        .spotlight {\n          position: relative;\n        }\n\n        .spotlight::before {\n          content: \"\";\n          position: absolute;\n          top: -40px;\n          left: 50%;\n          transform: translateX(-50%);\n          width: 260px;\n          height: 260px;\n          background: radial-gradient(\n            circle,\n            rgba(255, 255, 200, 0.25),\n            transparent 70%\n          );\n          z-index: -1;\n          filter: blur(20px);\n        }\n\n        .animate-fadeIn {\n          animation: fadeIn 0.4s ease-out;\n        }\n      "),
         showResults && (React.createElement("div", { className: "fade-in w-full flex flex-wrap justify-center items-start gap-10 mt-10 px-10" },
             React.createElement("div", null, renderWinner("3rd Place", (_a = winners[2]) !== null && _a !== void 0 ? _a : null)),
@@ -190,36 +192,38 @@ function RandomRafflePage() {
                     ? "2nd Place"
                     : "1st Place"))))),
         !animating && !showResults && step === 3 && (React.createElement("button", { onClick: function () { return __awaiter(_this, void 0, void 0, function () {
-                var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0;
-                return __generator(this, function (_1) {
-                    switch (_1.label) {
+                var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1;
+                return __generator(this, function (_2) {
+                    switch (_2.label) {
                         case 0:
                             setShowResults(true);
                             confetti_1.confettiRain();
+                            // 🔊 Play crowd cheer
+                            (_a = crowdSound.current) === null || _a === void 0 ? void 0 : _a.play();
                             return [4 /*yield*/, fetch("/api/raffle/random/save", {
                                     method: "POST",
                                     headers: { "Content-Type": "application/json" },
                                     body: JSON.stringify({
-                                        eventName: (_d = (_c = (_b = (_a = winners[0]) === null || _a === void 0 ? void 0 : _a.order) === null || _b === void 0 ? void 0 : _b.event) === null || _c === void 0 ? void 0 : _c.title) !== null && _d !== void 0 ? _d : null,
-                                        firstTicket: (_e = winners[0]) === null || _e === void 0 ? void 0 : _e.ticketCode,
-                                        firstName: (_g = (_f = winners[0]) === null || _f === void 0 ? void 0 : _f.order) === null || _g === void 0 ? void 0 : _g.name,
-                                        firstEmail: (_j = (_h = winners[0]) === null || _h === void 0 ? void 0 : _h.order) === null || _j === void 0 ? void 0 : _j.email,
-                                        firstContact: (_l = (_k = winners[0]) === null || _k === void 0 ? void 0 : _k.order) === null || _l === void 0 ? void 0 : _l.contactNo,
-                                        secondTicket: (_m = winners[1]) === null || _m === void 0 ? void 0 : _m.ticketCode,
-                                        secondName: (_p = (_o = winners[1]) === null || _o === void 0 ? void 0 : _o.order) === null || _p === void 0 ? void 0 : _p.name,
-                                        secondEmail: (_r = (_q = winners[1]) === null || _q === void 0 ? void 0 : _q.order) === null || _r === void 0 ? void 0 : _r.email,
-                                        secondContact: (_t = (_s = winners[1]) === null || _s === void 0 ? void 0 : _s.order) === null || _t === void 0 ? void 0 : _t.contactNo,
-                                        thirdTicket: (_u = winners[2]) === null || _u === void 0 ? void 0 : _u.ticketCode,
-                                        thirdName: (_w = (_v = winners[2]) === null || _v === void 0 ? void 0 : _v.order) === null || _w === void 0 ? void 0 : _w.name,
-                                        thirdEmail: (_y = (_x = winners[2]) === null || _x === void 0 ? void 0 : _x.order) === null || _y === void 0 ? void 0 : _y.email,
-                                        thirdContact: (_0 = (_z = winners[2]) === null || _z === void 0 ? void 0 : _z.order) === null || _0 === void 0 ? void 0 : _0.contactNo,
+                                        eventName: (_e = (_d = (_c = (_b = winners[0]) === null || _b === void 0 ? void 0 : _b.order) === null || _c === void 0 ? void 0 : _c.event) === null || _d === void 0 ? void 0 : _d.title) !== null && _e !== void 0 ? _e : null,
+                                        firstTicket: (_f = winners[0]) === null || _f === void 0 ? void 0 : _f.ticketCode,
+                                        firstName: (_h = (_g = winners[0]) === null || _g === void 0 ? void 0 : _g.order) === null || _h === void 0 ? void 0 : _h.name,
+                                        firstEmail: (_k = (_j = winners[0]) === null || _j === void 0 ? void 0 : _j.order) === null || _k === void 0 ? void 0 : _k.email,
+                                        firstContact: (_m = (_l = winners[0]) === null || _l === void 0 ? void 0 : _l.order) === null || _m === void 0 ? void 0 : _m.contactNo,
+                                        secondTicket: (_o = winners[1]) === null || _o === void 0 ? void 0 : _o.ticketCode,
+                                        secondName: (_q = (_p = winners[1]) === null || _p === void 0 ? void 0 : _p.order) === null || _q === void 0 ? void 0 : _q.name,
+                                        secondEmail: (_s = (_r = winners[1]) === null || _r === void 0 ? void 0 : _r.order) === null || _s === void 0 ? void 0 : _s.email,
+                                        secondContact: (_u = (_t = winners[1]) === null || _t === void 0 ? void 0 : _t.order) === null || _u === void 0 ? void 0 : _u.contactNo,
+                                        thirdTicket: (_v = winners[2]) === null || _v === void 0 ? void 0 : _v.ticketCode,
+                                        thirdName: (_x = (_w = winners[2]) === null || _w === void 0 ? void 0 : _w.order) === null || _x === void 0 ? void 0 : _x.name,
+                                        thirdEmail: (_z = (_y = winners[2]) === null || _y === void 0 ? void 0 : _y.order) === null || _z === void 0 ? void 0 : _z.email,
+                                        thirdContact: (_1 = (_0 = winners[2]) === null || _0 === void 0 ? void 0 : _0.order) === null || _1 === void 0 ? void 0 : _1.contactNo,
                                         usedDateRange: useDateRange,
                                         startDate: useDateRange ? fromDate : null,
                                         endDate: useDateRange ? toDate : null
                                     })
                                 })];
                         case 1:
-                            _1.sent();
+                            _2.sent();
                             return [2 /*return*/];
                     }
                 });
