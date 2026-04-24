@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import localFont from "next/font/local";
+//import "./globals.css";
 import Footer from "@/components/Footer";
 import Script from "next/script";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
-const geistSans = Geist({
+// Load local Geist fonts (Next.js 14 does NOT include built‑in Geist)
+const geistSans = localFont({
+  src: "../public/fonts/Geist-Regular.ttf",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  weight: "400",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
+  src: "../public/fonts/GeistMono-Regular.ttf",
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: "400",
 });
 
 export const metadata: Metadata = {
