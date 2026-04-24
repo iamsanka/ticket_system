@@ -1,22 +1,16 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-//import "./globals.css";
+import "./globals.css";
 import Footer from "@/components/Footer";
 import Script from "next/script";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
-// Load local Geist fonts (Next.js 14 does NOT include built‑in Geist)
+// Load local Geist Sans only
 const geistSans = localFont({
   src: "../public/fonts/Geist-Regular.ttf",
   variable: "--font-geist-sans",
-  weight: "400",
-});
-
-const geistMono = localFont({
-  src: "../public/fonts/GeistMono-Regular.ttf",
-  variable: "--font-geist-mono",
   weight: "400",
 });
 
@@ -78,7 +72,7 @@ export default function RootLayout({
 
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-black`}
+        className={`${geistSans.variable} antialiased bg-white text-black`}
       >
         {children}
         <Footer />

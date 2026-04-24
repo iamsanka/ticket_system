@@ -2,20 +2,15 @@
 exports.__esModule = true;
 exports.metadata = exports.fetchCache = exports.dynamic = void 0;
 var local_1 = require("next/font/local");
-//import "./globals.css";
+require("./globals.css");
 var Footer_1 = require("@/components/Footer");
 var script_1 = require("next/script");
 exports.dynamic = "force-dynamic";
 exports.fetchCache = "force-no-store";
-// Load local Geist fonts (Next.js 14 does NOT include built‑in Geist)
+// Load local Geist Sans only
 var geistSans = local_1["default"]({
     src: "../public/fonts/Geist-Regular.ttf",
     variable: "--font-geist-sans",
-    weight: "400"
-});
-var geistMono = local_1["default"]({
-    src: "../public/fonts/GeistMono-Regular.ttf",
-    variable: "--font-geist-mono",
     weight: "400"
 });
 exports.metadata = {
@@ -52,7 +47,7 @@ function RootLayout(_a) {
         React.createElement("head", null,
             React.createElement(script_1["default"], { async: true, src: "https://www.googletagmanager.com/gtag/js?id=G-YHFX8X9ZX3", strategy: "afterInteractive" }),
             React.createElement(script_1["default"], { id: "ga-setup", strategy: "afterInteractive" }, "\n            window.dataLayer = window.dataLayer || [];\n            function gtag(){dataLayer.push(arguments);}\n            gtag('js', new Date());\n            gtag('config', 'G-YHFX8X9ZX3');\n          ")),
-        React.createElement("body", { suppressHydrationWarning: true, className: geistSans.variable + " " + geistMono.variable + " antialiased bg-white text-black" },
+        React.createElement("body", { suppressHydrationWarning: true, className: geistSans.variable + " antialiased bg-white text-black" },
             children,
             React.createElement(Footer_1["default"], null))));
 }
