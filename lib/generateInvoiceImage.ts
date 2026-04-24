@@ -1,11 +1,12 @@
-import { createCanvas, loadImage, registerFont } from "canvas";
+import { createCanvas, loadImage, GlobalFonts } from "@napi-rs/canvas";
 import path from "path";
 import { generateInvoice } from "./generateInvoice";
 
 // Register Geist font
-registerFont(path.join(process.cwd(), "public", "fonts", "Geist-Regular.ttf"), {
-  family: "Geist",
-});
+GlobalFonts.registerFromPath(
+  path.join(process.cwd(), "public", "fonts", "Geist-Regular.ttf"),
+  "Geist"
+);
 
 type Ticket = {
   category: string;
@@ -144,7 +145,6 @@ export async function generateInvoiceImage(order: any, tickets: Ticket[]) {
   ctx.font = "24px Geist";
   ctx.fillStyle = "#f5f5f5";
 
-  // Payment method
   ctx.fillText(`Payment method: ${invoice.paymentMethod}`, 40, y);
   y += 40;
 

@@ -1,9 +1,11 @@
-import { createCanvas, loadImage, registerFont } from "canvas";
+import { createCanvas, loadImage, GlobalFonts } from "@napi-rs/canvas";
 import path from "path";
 
-registerFont(path.join(process.cwd(), "public", "fonts", "Geist-Regular.ttf"), {
-  family: "Geist",
-});
+// Register Geist font
+GlobalFonts.registerFromPath(
+  path.join(process.cwd(), "public", "fonts", "Geist-Regular.ttf"),
+  "Geist"
+);
 
 export async function generateInvoiceImageForAdmin(order: any, tickets: any[]) {
   const total = Number(order.totalAmount ?? 0) / 100;
